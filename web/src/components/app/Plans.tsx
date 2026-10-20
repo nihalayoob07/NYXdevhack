@@ -1,8 +1,7 @@
 "use client";
 import { motion } from "motion/react";
 import { CheckCircle } from "@phosphor-icons/react";
-import { fmt, rupees, type Evaluated } from "@/lib/engine";
-import type { Verdict } from "@/lib/agent";
+import { fmt, rupees, type Evaluated, type Verdict } from "@/lib/engine";
 
 const VERDICT: Record<Verdict, { label: string; style: React.CSSProperties }> = {
   recommended: { label: "Best", style: { background: "var(--good)", color: "var(--card)" } },

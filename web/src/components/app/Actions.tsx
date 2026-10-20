@@ -4,6 +4,14 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowsClockwise, Bed, ChatCircleText, Check, CopySimple, Receipt, Scales, type Icon } from "@phosphor-icons/react";
 import type { Action } from "@/lib/engine";
 
+// Where "Send" takes the traveller: WhatsApp for people, their email app for companies. Bookings they make themselves.
+function sendUrl(a: Action) {
+  if (a.kind === "rebook") return null;
+  if (a.kind === "notify") return `https://wa.me/?text=${encodeURIComponent(a.body)}`;
+  const subject = a.body.match(/^Subject: (.*)\n/)?.[1] ?? a.title;
+  return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(a.body.replace(/^Subject: .*\n\n?/, ""))}`;
+}
+
 const ICON: Record<Action["kind"], Icon> = { rebook: ArrowsClockwise, refund: Receipt, claim: Scales, hotel: Bed, notify: ChatCircleText };
 
 export function Actions({ actions }: { actions: Action[] }) {
@@ -16,16 +24,8 @@ export function Actions({ actions }: { actions: Action[] }) {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted" aria-live="polite">
-          <span className="typed tabular text-text">{sent.size}</span> of {actions.length} approved
+          <span className="typed tabular text-text">{sent.size}</span> of {actions.length} done
         </p>
-        <button
-          type="button"
-          onClick={() => setSent(new Set(actions.map((a) => a.id)))}
-          disabled={sent.size === actions.length}
-          className="rounded-[12px] bg-accent px-4 py-2 text-sm font-bold text-on-accent transition active:scale-[0.97] disabled:opacity-40"
-        >
-          Approve all
-        </button>
       </div>
       <ul className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-2">
         {actions.map((a, i) => {
@@ -55,14 +55,26 @@ export function Actions({ actions }: { actions: Action[] }) {
                   <span className="block truncate font-semibold">{a.title}</span>
                   <span className="block truncate text-xs text-muted">To {a.to}</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => mark(a.id)}
-                  disabled={done}
-                  className="typed shrink-0 rounded border-2 border-text px-3 py-1 text-xs font-bold transition active:scale-[0.97] disabled:border-good disabled:text-good"
-                >
-                  {done ? "Approved" : "Approve"}
-                </button>
+                {sendUrl(a) && !done ? (
+                  <a
+                    href={sendUrl(a)!}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => mark(a.id)}
+                    className="typed shrink-0 rounded border-2 border-text bg-accent px-3 py-1 text-xs font-bold text-on-accent transition active:scale-[0.97]"
+                  >
+                    Send
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => mark(a.id)}
+                    disabled={done}
+                    className="typed shrink-0 rounded border-2 border-text px-3 py-1 text-xs font-bold transition active:scale-[0.97] disabled:border-good disabled:text-good"
+                  >
+                    {done ? (sendUrl(a) ? "Sent" : "Booked") : "Booked it"}
+                  </button>
+                )}
               </div>
               <AnimatePresence initial={false}>
                 {expanded && (
@@ -95,7 +107,7 @@ export function Actions({ actions }: { actions: Action[] }) {
           );
         })}
       </ul>
-      <p className="mt-3 text-xs text-muted">Demo: approving marks a draft as sent. Nothing leaves this page.</p>
+      <p className="mt-3 text-xs text-muted">Send opens WhatsApp or your email app with the message filled in. Nothing goes out until you press send there.</p>
     </div>
   );
 }

@@ -17,7 +17,7 @@ export function line(l: Leg) {
 function stub(l: Leg): [string, string] {
   if (l.mode === "event") return [fmt(l.at!).slice(0, 3).toUpperCase(), clock(l.at!)];
   if (l.mode === "hotel") return ["1", "NIGHT"];
-  if (!l.ref) return [l.mode.toUpperCase(), "FOR 2"];
+  if (!l.ref) return [l.mode.toUpperCase(), ""];
   const [k, v] = l.ref.split(" ");
   return [k.toUpperCase(), v.length > 7 ? v.slice(-6) : v];
 }

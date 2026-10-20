@@ -9,6 +9,11 @@ summary: Every change to the project, newest first. One entry per commit.
 
 Newest first. Use the [[Changelog entry]] template: date, who, what changed, why, notes touched.
 
+## 2026-10-20: Real product MVP: your own trip (Nihal)
+**What:** `/` now works for any traveller. New trip: paste confirmations (`/api/parse`, Groq) or add by hand, check every field, set limits; saved in `localStorage`. Something went wrong: pick a booking, delayed or cancelled; the engine shows what breaks. Find a way through: the gap to fill, prefilled real searches, "I found one" form; the engine checks each option, "Compare with AI" explains, approve, "Save as my trip". Drafts send via WhatsApp / email. Engine generalised: any weekday (`trip.week`), any airline, optional companion/hotel/waiting-for, passenger count; `verdictOf` moved to the engine. Agent and `/api/agent` take `{ trip, scenario }`. New: `recover.ts`, `store.ts`, `schema.ts`, `App`, `Setup`, `ui`, `Avatar`. Example trip kept behind "Try an example trip".
+**Why:** An MVP should be the product a real traveller can use, not a demo.
+**Notes touched:** [[Handoff]], [[Architecture]], [[Decisions]], [[Demo Script]], [[Tasks]]
+
 ## 2026-10-20: Full product back at /, in the ticket stack look (Nihal)
 **What:** The previous commit shipped only the preview's phone flow. Replaced it with the full product: the former demo console (`components/app/Console.tsx`, `Plans.tsx`, `Actions.tsx`, `FlipText.tsx`) restyled in the ticket stack look. Bookings show as a ticket stack with stamps, disruptions arrive as a notification, all original features kept (airline comparison, agent log, limits, options, ruled out, repaired trip, actions). Paper palette and fonts are now global, so stranded mode matches. Nav is back on every page. Removed `TripApp.tsx` and Geist fonts.
 **Why:** The goal was the AI product in the new theme, not the preview copied.

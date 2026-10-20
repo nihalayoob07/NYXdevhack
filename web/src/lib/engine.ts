@@ -23,11 +23,14 @@ export interface Leg {
   note?: string;
 }
 
+// Times are minutes from 00:00 on the Monday of the trip's week (`week`), so day names never drift.
 export interface Trip {
   traveller: string;
-  companion: string;
+  companion?: string;
+  passengers?: number; // default: 2 with a companion, else 1
   date: string;
-  waitingFor: { name: string; relation: string };
+  week?: string; // ISO date of that Monday
+  waitingFor?: { name: string; relation: string };
   defaultConstraints: string;
   bookings: Leg[];
 }
@@ -71,8 +74,9 @@ const isTransport = (l: Leg) => l.mode === "flight" || l.mode === "train" || l.m
 
 // ---------- formatting ----------
 
+export const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export function fmt(min: number) {
-  const day = ["Mon", "Tue", "Wed"][Math.floor(min / 1440)] ?? "Day+";
+  const day = DAYS[((Math.floor(min / 1440) % 7) + 7) % 7];
   const m = ((min % 1440) + 1440) % 1440;
   return `${day} ${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
@@ -129,15 +133,22 @@ export function findAffected(trip: Trip, s: Scenario | null): ChainNode[] {
 
 // ---------- constraints from plain language (offline parser; the AI does this when online) ----------
 
-export function parseConstraints(text: string): Constraints {
+// When the first booking starts, in minutes.
+export const tripStart = (t: Trip) => Math.min(...t.bookings.map((b) => b.dep ?? b.at ?? 0));
+
+// A weekday before the trip starts means the next week.
+export const dayAt = (day: number, from = 0) => (day * 1440 < Math.floor(from / 1440) * 1440 ? day + 7 : day) * 1440;
+
+// `from`: when the trip starts, so "by 9am Tuesday" lands on the right Tuesday.
+export function parseConstraints(text: string, from = 0): Constraints {
   const t = text.toLowerCase();
   let deadline: number | null = null;
-  const d = t.match(/by\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:on\s+)?(mon|tue|wed)/);
+  const d = t.match(/by\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:on\s+)?(mon|tue|wed|thu|fri|sat|sun)/);
   if (d) {
     let h = Number(d[1]) % 12;
     if (d[3] === "pm") h += 12;
     if (!d[3] && Number(d[1]) === 12) h = 12;
-    deadline = ["mon", "tue", "wed"].indexOf(d[4]) * 1440 + h * 60 + Number(d[2] ?? 0);
+    deadline = dayAt(DAYS.map((x) => x.toLowerCase()).indexOf(d[4]), from) + h * 60 + Number(d[2] ?? 0);
   }
   const b = t.match(/(?:₹|rs\.?|inr)\s?([\d,]+)/);
   const lay = t.match(/(\d+)\s*(?:h|hr|hour)s?\s*(?:max\s*)?layover/);
@@ -218,8 +229,8 @@ export function evaluatePlan(trip: Trip, s: Scenario, plan: Plan, c: Constraints
   if (c.maxLayover !== null && maxLayover > c.maxLayover)
     hardFails.push(`${dur(maxLayover)} idle wait between legs, over the ${dur(c.maxLayover)} limit`);
 
-  const originalHotel = trip.bookings.find((b) => b.mode === "hotel")!;
-  if (!plan.steps.includes(originalHotel.id) && !plan.refunds.some((r) => r.booking === originalHotel.id))
+  const originalHotel = trip.bookings.find((b) => b.mode === "hotel");
+  if (originalHotel && !plan.steps.includes(originalHotel.id) && !plan.refunds.some((r) => r.booking === originalHotel.id))
     notes.push(`Your prepaid night at ${originalHotel.title} goes unused.`);
   if (seatsLeft !== null && seatsLeft <= 6) notes.push(`Only ${seatsLeft} seats left at this fare.`);
   steps.filter((x) => x.isNew && x.note).forEach((x) => notes.push(x.note!));
@@ -246,6 +257,13 @@ export function rankPlans(trip: Trip, s: Scenario, c: Constraints): Evaluated[] 
   return s.plans
     .map((p) => evaluatePlan(trip, s, p, c))
     .sort((a, b) => Number(a.hardFails.length > 0) - Number(b.hardFails.length > 0) || b.score - a.score);
+}
+
+export type Verdict = "recommended" | "backup" | "risky" | "ruled-out";
+export function verdictOf(e: Evaluated, i: number): Verdict {
+  if (e.hardFails.length) return "ruled-out";
+  if (i === 0) return "recommended";
+  return e.risky ? "risky" : "backup";
 }
 
 // Offline explanations in the same voice the agent uses: compare each option to the best one.
@@ -275,9 +293,16 @@ export interface Action {
   body: string;
 }
 
+export const passengers = (trip: Trip) => trip.passengers ?? (trip.companion ? 2 : 1);
+const airline = (l: Leg) => l.title.split(" ")[0];
+const city = (place?: string) => place?.split(", ").at(-1) ?? "";
+
 export function draftActions(trip: Trip, s: Scenario, e: Evaluated): Action[] {
   const actions: Action[] = [];
   const name = trip.traveller;
+  const pax = passengers(trip);
+  const forPax = pax > 1 ? `for ${pax}` : "for 1";
+  const claimed = s.claim ? s.effects.find((x) => x.cancel)?.booking : undefined;
   const newLegs = e.steps.filter((x) => x.isNew);
   const finalHotel = e.steps.at(-1)?.mode === "hotel" ? e.steps.at(-1)! : null;
   const byId = new Map(trip.bookings.map((b) => [b.id, b]));
@@ -289,30 +314,30 @@ export function draftActions(trip: Trip, s: Scenario, e: Evaluated): Action[] {
       title: `Book ${newLegs.map((l) => l.title).join(" + ")}`,
       to: "Booking",
       body: newLegs
-        .map((l) => `${l.title}${l.dep !== undefined ? `: ${l.from} ${fmt(l.dep)} to ${l.to} ${fmt(l.arr!)}` : `, ${l.to}`}. ${rupees(l.price ?? 0)} for 2.`)
+        .map((l) => `${l.title}${l.dep !== undefined ? `: ${l.from} ${fmt(l.dep)} to ${l.to} ${fmt(l.arr!)}` : `, ${l.to}`}. ${rupees(l.price ?? 0)} ${forPax}.`)
         .join("\n"),
     });
 
   for (const r of e.plan.refunds) {
-    if (s.claim && r.booking === "flight") continue; // the compensation claim already asks for this refund
+    if (r.booking === claimed) continue; // the compensation claim already asks for this refund
     const b = byId.get(r.booking)!;
     actions.push({
       id: `refund-${r.booking}`,
       kind: "refund",
       title: `Refund for ${b.title}`,
-      to: b.mode === "train" ? "IRCTC" : b.mode === "flight" ? "IndiGo customer care" : b.title,
-      body: `Hello,\n\nPlease process a refund for ${b.ref} (${b.title}, ${trip.date}) for 2 passengers in the name of ${name}. ${r.note}. Expected amount: ${rupees(r.amount)}.\n\nThank you,\n${name}`,
+      to: b.mode === "train" ? "IRCTC" : b.mode === "flight" ? `${airline(b)} customer care` : b.title,
+      body: `Hello,\n\nPlease process a refund for ${b.ref ?? "my booking"} (${b.title}, ${trip.date}) ${forPax} in the name of ${name}. ${r.note}.${r.amount ? ` Expected amount: ${rupees(r.amount)}.` : ""}\n\nThank you,\n${name}`,
     });
   }
 
-  if (s.claim === "dgca-cancellation") {
-    const f = byId.get("flight")!;
+  if (s.claim === "dgca-cancellation" && claimed) {
+    const f = byId.get(claimed)!;
     actions.push({
       id: "claim",
       kind: "claim",
       title: "DGCA compensation claim",
-      to: "IndiGo customer care, cc: AirSewa",
-      body: `Subject: Compensation claim for cancelled flight ${f.title}, ${f.ref}\n\nDear IndiGo team,\n\nFlight ${f.title} (${f.from} to ${f.to}, ${trip.date}, ${clock(f.dep!)}) was cancelled at ${clock(s.detectedAt)} on the day of travel. The alternate flight offered departs more than two hours after the scheduled departure.\n\nUnder DGCA Civil Aviation Requirement Section 3, Series M, Part IV, I request:\n1. A full refund of ${rupees(f.price!)} for ${f.ref}.\n2. Compensation of ₹10,000 per passenger for 2 passengers (block time over 2 hours), or the basic fare plus airline fuel charge if lower.\n\nPlease confirm within 30 days.\n\nRegards,\n${name}`,
+      to: `${airline(f)} customer care, cc: AirSewa`,
+      body: `Subject: Compensation claim for cancelled flight ${f.title}${f.ref ? `, ${f.ref}` : ""}\n\nDear ${airline(f)} team,\n\nFlight ${f.title} (${f.from} to ${f.to}, ${trip.date}, ${clock(f.dep!)}) was cancelled at ${clock(s.detectedAt)} on the day of travel. The alternate flight offered departs more than two hours after the scheduled departure.\n\nUnder DGCA Civil Aviation Requirement Section 3, Series M, Part IV, I request:\n1. A full refund${f.price ? ` of ${rupees(f.price)}` : ""}${f.ref ? ` for ${f.ref}` : ""}.\n2. Compensation of ₹10,000 per passenger for ${pax} passenger${pax > 1 ? "s" : ""} (block time over 2 hours), or the basic fare plus airline fuel charge if lower.\n\nPlease confirm within 30 days.\n\nRegards,\n${name}`,
     });
   }
 
@@ -322,15 +347,19 @@ export function draftActions(trip: Trip, s: Scenario, e: Evaluated): Action[] {
       kind: "hotel",
       title: finalHotel.isNew ? `Confirm ${finalHotel.title}` : `Late check-in at ${finalHotel.title}`,
       to: finalHotel.title,
-      body: `Hello,\n\n${finalHotel.isNew ? `Please confirm a room for 2 tonight (${trip.date}) for ${name}.` : `This is ${name}, ${finalHotel.ref}.`} Our travel plans changed and we now expect to reach the hotel around ${clock(e.arrival + (finalHotel.connectMin ?? 20))}. Please hold the room for a late check-in. I'm travelling with my mother, so a ground-floor room would help.\n\nThank you,\n${name}`,
+      body: `Hello,\n\n${finalHotel.isNew ? `Please confirm a room ${forPax} tonight (${trip.date}) for ${name}.` : `This is ${name}${finalHotel.ref ? `, ${finalHotel.ref}` : ""}.`} Our travel plans changed and we now expect to reach the hotel around ${clock(e.arrival + (finalHotel.connectMin ?? 20))}. Please hold the room for a late check-in.${trip.companion ? ` I'm travelling with ${trip.companion.replace(/^(?:her|his|their) /, "my ")}.` : ""}\n\nThank you,\n${name}`,
     });
 
-  actions.push({
-    id: "notify",
-    kind: "notify",
-    title: `Tell ${trip.waitingFor.name} the new arrival time`,
-    to: `${trip.waitingFor.name} (WhatsApp)`,
-    body: `Hi ${trip.waitingFor.name}! Small change of plan: ${e.plan.label.toLowerCase()}. Amma and I now reach Mysuru around ${clock(e.arrival)}${finalHotel ? ` and stay at ${finalHotel.title}` : ""}. All fine for the muhurtham tomorrow.`,
-  });
+  const w = trip.waitingFor;
+  const event = trip.bookings.find((b) => b.mode === "event");
+  const lastStop = city(e.steps.filter((x) => x.mode !== "hotel").at(-1)?.to);
+  if (w)
+    actions.push({
+      id: "notify",
+      kind: "notify",
+      title: `Tell ${w.name} the new arrival time`,
+      to: `${w.name} (WhatsApp)`,
+      body: `Hi ${w.name}! Small change of plan: ${e.plan.label.toLowerCase()}. ${trip.companion ? "We" : "I"} now reach ${lastStop} around ${fmt(e.arrival)}${finalHotel ? ` and stay at ${finalHotel.title}` : ""}.${event && e.buffer !== null && e.buffer >= 0 ? ` All fine for ${event.title}.` : ""}`,
+    });
   return actions;
 }

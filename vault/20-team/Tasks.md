@@ -17,12 +17,15 @@ summary: Task board. Move items between sections and add your name.
 - [ ] Rehearse the [[Demo Script]] twice, time it
 - [ ] More scenarios: strike notice, weather diversion, denied boarding (DGCA 200%/400% compensation)
 - [ ] Test the app on a real phone (Safari + Chrome), fix anything that clips
-- [ ] Check the live AI run end to end in the app once `GROQ_API_KEY` is set
+- [ ] Set `GROQ_API_KEY` in Vercel and test "Read my bookings" with real confirmation emails (IndiGo, IRCTC, Booking.com)
+- [ ] Later: live flight status API to detect delays automatically (step 4, skipped for the MVP)
+- [ ] Later: let users reorder bookings in the setup form (hotels sort to the end of their check-in day)
 - [ ] Optional polish: torn-ticket animation when a broken ticket is replaced (in the preview CSS as `.tk.torn`)
 - [ ] Optional: shorten the agent log wording for non-technical viewers
 - [ ] Native APK (later, after the shortlist)
 
 ## Done
+- [x] Real product MVP: own trip, report, real searches, engine-checked options, send drafts (Nihal, 2026-10-20)
 - [x] Full product at `/` in the ticket stack look, landing page removed (Nihal, 2026-10-20)
 - [x] Next.js app, engine, 4 scenarios, agent with offline fallback (Raahil, 2026-10-20)
 - [x] Landing page, demo console, stranded mode with motion (Raahil, 2026-10-20)

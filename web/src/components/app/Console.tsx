@@ -1,23 +1,22 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
-import { AirplaneTilt, ArrowCounterClockwise, ArrowRight, Bed, Lightning, Robot, Train, Warning, WifiSlash, XCircle, type Icon } from "@phosphor-icons/react";
-import { clock, draftActions, dur, findAffected, fmt, parseConstraints, rankPlans, rupees, type ChainNode, type Constraints } from "@/lib/engine";
-import { scenarios, trip } from "@/lib/world";
+import { AirplaneTilt, ArrowCounterClockwise, ArrowRight, ArrowSquareOut, Bed, Lightning, MagnifyingGlass, PencilSimple, Robot, Sparkle, Train, Warning, WifiSlash, XCircle, type Icon } from "@phosphor-icons/react";
+import { clock, draftActions, dur, explain, findAffected, fmt, parseConstraints, rankPlans, rupees, tripStart, verdictOf, type ChainNode, type Constraints, type Scenario } from "@/lib/engine";
+import { applyPlan, newId, dateLabel, draftProblem, isTransport, needOf, nowMin, reportScenario, strategies, toLocal, toMin, withFound, dateOf, type Draft, type Found, type Report } from "@/lib/recover";
+import { saveTrip, type Saved } from "@/lib/store";
+import { scenarios } from "@/lib/world";
 import { FlipText } from "./FlipText";
-import { Ticket, type Look } from "./Ticket";
+import { ICON, Ticket, type Look } from "./Ticket";
 import { useAgent } from "./useAgent";
 import { Plans, type PlanRow } from "./Plans";
 import { Actions } from "./Actions";
+import { LegFields, Setup } from "./Setup";
+import { Button, Eyebrow, Field, Panel, Status, input } from "./ui";
 
 const CHAOS_ICON: Record<string, Icon> = { "inbound-delay": AirplaneTilt, "flight-cancelled": XCircle, "train-cancelled": Train, "hotel-overbooked": Bed };
-const IDLE_CLOCK = 600;
 const ease = [0.16, 1, 0.3, 1] as const;
-const event = trip.bookings.find((b) => b.mode === "event")!;
-const city = event.to!.split(", ").at(-1)!;
-const companion = trip.companion.match(/, (\w+)/)?.[1] ?? trip.companion;
-const NAME: Record<string, string> = { flight: "flight", train: "train", bus: "bus", cab: "cab", hotel: "hotel", event: "the muhurtham" };
 
 // How each booking looks on the stack after a disruption.
 function stamp(n: ChainNode, delay: number): [Look, string?] {
@@ -36,6 +35,7 @@ function Chips({ c }: { c: Constraints }) {
     c.maxLayover !== null && `Waits under ${dur(c.maxLayover)}`,
   ].filter(Boolean) as string[];
   const soft = [c.companion && `Comfort for ${c.companion}: fewer changes, no late nights`].filter(Boolean) as string[];
+  if (!hard.length && !soft.length) return <p className="mt-2 text-xs text-muted">No limits found yet. Try &quot;must reach Mysuru by 9am Tuesday, max ₹4,000 extra&quot;.</p>;
   return (
     <div className="mt-3 space-y-2">
       {[
@@ -45,17 +45,10 @@ function Chips({ c }: { c: Constraints }) {
         (list as string[]).length ? (
           <div key={k as string} className="flex flex-wrap items-center gap-1.5">
             <span className="typed w-9 text-[11px] text-muted">{k as string}</span>
-            {(list as string[]).map((t, i) => (
-              <motion.span
-                key={t}
-                initial={{ opacity: 0, scale: 0.85 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.07, type: "spring", stiffness: 300, damping: 22 }}
-                className="typed rounded border border-dashed border-[#b5a98f] bg-surface px-2.5 py-1 text-xs"
-                style={{ color: color as string }}
-              >
+            {(list as string[]).map((t) => (
+              <span key={t} className="typed rounded border border-dashed border-[#b5a98f] bg-surface px-2.5 py-1 text-xs" style={{ color: color as string }}>
                 {t}
-              </motion.span>
+              </span>
             ))}
           </div>
         ) : null,
@@ -64,97 +57,136 @@ function Chips({ c }: { c: Constraints }) {
   );
 }
 
-const Eyebrow = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <p className={`typed text-[11px] uppercase tracking-[0.14em] text-muted ${className}`}>{children}</p>
-);
+export function Console({ saved }: { saved: Saved }) {
+  const { trip, example } = saved;
+  const week = trip.week ?? "2026-10-26";
+  const start = tripStart(trip);
+  const event = trip.bookings.find((b) => b.mode === "event");
+  const city = (event?.to ?? trip.bookings.filter((b) => b.mode !== "hotel").at(-1)?.to ?? "").split(", ").at(-1);
+  const legs = trip.bookings.filter((b) => b.mode !== "event");
 
-function Panel({ title, children, aside, className = "" }: { title: string; children: React.ReactNode; aside?: React.ReactNode; className?: string }) {
-  return (
-    <section className={`rounded-[22px] bg-bg p-4 shadow-[0_2px_0_#c9bfa9,0_30px_50px_-40px_rgb(60_40_20/0.55)] md:p-6 ${className}`}>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-xl font-bold">{title}</h2>
-        {aside}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Status({ bad, children }: { bad?: boolean; children: React.ReactNode }) {
-  return (
-    <span className="typed inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1.5 text-xs font-semibold" style={{ color: bad ? "var(--bad)" : "var(--good)" }}>
-      <span className="pulse" />
-      {children}
-    </span>
-  );
-}
-
-export function Console() {
   const agent = useAgent();
-  const [scenarioId, setScenarioId] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
   const [text, setText] = useState(trip.defaultConstraints);
+  const [s, setS] = useState<Scenario | null>(null);
+  const [report, setReport] = useState<Report>({ booking: legs.find((b) => isTransport(b.mode))?.id ?? legs[0]?.id, kind: "delay", minutes: 120 });
+  const [found, setFound] = useState<Found[]>([]);
+  const [adding, setAdding] = useState<{ draft: Draft; replaces: string[] } | null>(null);
+  const [agentFor, setAgentFor] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [approved, setApproved] = useState(false);
   const [airlineSaid, setAirlineSaid] = useState(false);
   const [notif, setNotif] = useState(false);
   const alertRef = useRef<HTMLDivElement>(null);
   const repairedRef = useRef<HTMLDivElement>(null);
-  const s = scenarios.find((x) => x.id === scenarioId) ?? null;
+  const addRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (approved) repairedRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [approved]);
-
-  // Demo time is compressed: the "airline" announces 8s after Domino's alert.
+  useEffect(() => {
+    if (adding) addRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [adding]);
+  // Example trip only: the "airline" announces 8s after Domino's alert.
   useEffect(() => {
     if (!s?.airlineAnnouncesAt) return;
     const t = setTimeout(() => setAirlineSaid(true), 8000);
     return () => clearTimeout(t);
   }, [s]);
-
-  // The disruption lands as a push notification first.
   useEffect(() => {
     if (!notif) return;
     const t = setTimeout(() => setNotif(false), 4500);
     return () => clearTimeout(t);
   }, [notif]);
 
-  const nodes = useMemo(() => findAffected(trip, s), [s]);
-  const rows: PlanRow[] = useMemo(() => {
-    if (!s || !agent.result) return [];
-    const ranked = rankPlans(trip, s, agent.constraints ?? parseConstraints(text));
-    const said = new Map(agent.result.ranked.map((r) => [r.planId, r]));
-    return ranked.map((e) => ({ e, verdict: said.get(e.plan.id)?.verdict ?? "backup", explanation: said.get(e.plan.id)?.explanation ?? "" }));
-  }, [s, agent.result, agent.constraints, text]);
+  if (editing) return <Setup editing={trip} onDone={() => setEditing(false)} />;
 
-  const pickedId = selected ?? rows[0]?.e.plan.id ?? null; // default to the top-ranked plan
+  const mine = !!s?.id.startsWith("user-"); // reported by the traveller, not a curated example
+  const sEval = s && mine ? withFound(trip, s, found) : s;
+  const nodes = findAffected(trip, s);
+  const need = s && mine ? needOf(trip, s) : null;
+  const c = agent.constraints ?? parseConstraints(text, start);
+  const ranked = sEval?.plans.length ? rankPlans(trip, sEval, c) : [];
+  const planKey = sEval?.plans.map((p) => p.id).join() ?? "";
+  const fresh = agent.result && agentFor === planKey ? agent.result : null;
+  const said = new Map(fresh?.ranked.map((r) => [r.planId, r]) ?? []);
+  const rows: PlanRow[] = ranked.map((e, i) => ({ e, verdict: verdictOf(e, i), explanation: said.get(e.plan.id)?.explanation ?? explain(e, ranked[0], c) }));
+  const showRows = rows.length > 0 && (mine || !!fresh);
+  const pickedId = rows.some((r) => r.e.plan.id === selected) ? selected : (rows[0]?.e.plan.id ?? null);
   const chosen = rows.find((r) => r.e.plan.id === pickedId)?.e ?? null;
-  const actions = s && chosen && approved ? draftActions(trip, s, chosen) : [];
+  const actions = s && sEval && chosen && approved ? draftActions(trip, sEval, chosen) : [];
+  const affected = nodes.filter((n) => n.status !== "ok").length;
+  const delayOf = (id: string) => s?.effects.find((x) => x.booking === id)?.delay ?? 0;
 
-  const trigger = (id: string) => {
-    setScenarioId(id);
+  const clear = () => {
+    agent.reset();
+    setFound([]);
+    setAdding(null);
     setSelected(null);
     setApproved(false);
     setAirlineSaid(false);
+    setAgentFor("");
+  };
+  const trigger = (id: string) => {
+    clear();
+    setS(scenarios.find((x) => x.id === id)!);
     setNotif(true);
-    agent.run(id, text);
+    setAgentFor(scenarios.find((x) => x.id === id)!.plans.map((p) => p.id).join());
+    agent.run({ scenarioId: id, constraints: text });
+    setTimeout(() => alertRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  };
+  const submitReport = () => {
+    clear();
+    setS(reportScenario(trip, report, nowMin(week)));
     setTimeout(() => alertRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   };
   const reset = () => {
-    agent.reset();
-    setScenarioId(null);
-    setSelected(null);
-    setApproved(false);
-    setAirlineSaid(false);
-    setNotif(false);
+    clear();
+    setS(null);
+  };
+  const compare = () => {
+    setAgentFor(planKey);
+    agent.run({ trip, scenario: sEval, constraints: text });
+  };
+  const startAdding = (mode: Draft["mode"]) => {
+    if (!need) return;
+    const draft: Draft =
+      mode === "hotel"
+        ? { id: newId("f"), mode, title: "", to: need.to, checkIn: dateOf(need.after, week) }
+        : { id: newId("f"), mode, title: "", from: need.from, to: need.to, depart: toLocal(need.after, week) };
+    setAdding({ draft, replaces: [need.leg.id] });
+  };
+  const addFound = () => {
+    if (!adding) return;
+    const d = adding.draft;
+    setFound((f) => [
+      ...f,
+      {
+        id: d.id,
+        mode: d.mode,
+        title: d.title.trim(),
+        from: d.from,
+        to: d.to,
+        dep: d.depart && d.mode !== "hotel" ? toMin(d.depart, week) : undefined,
+        arr: d.arrive && d.mode !== "hotel" ? toMin(d.arrive, week) : undefined,
+        checkInBy: d.mode === "hotel" && d.checkInBy ? toMin(d.checkInBy, week) : undefined,
+        price: d.price ?? 0,
+        replaces: adding.replaces,
+      },
+    ]);
+    setSelected(d.id);
+    setAdding(null);
+  };
+  const saveRepaired = () => {
+    if (!chosen) return;
+    saveTrip({ trip: { ...applyPlan(trip, chosen.steps), defaultConstraints: text }, example });
+  };
+  const persistLimits = () => {
+    if (text !== trip.defaultConstraints) saveTrip({ trip: { ...trip, defaultConstraints: text }, example });
   };
 
-  const original = trip.bookings.filter((b) => b.mode !== "event");
-  const plannedArrival = original.filter((b) => b.arr !== undefined).at(-1)!.arr!;
-  const affected = nodes.filter((n) => n.status !== "ok").length;
-  const hit = nodes.find((n) => n.status === "broken");
-  const atRisk = nodes.filter((n) => n.status === "at-risk").map((n) => NAME[n.leg.mode]);
-  const delayOf = (id: string) => s?.effects.find((x) => x.booking === id)?.delay ?? 0;
+  const addProblem = adding ? (draftProblem(adding.draft) ?? (adding.draft.mode !== "hotel" && !adding.draft.to?.trim() ? "Add where it goes" : null)) : null;
+  const breakIdx = need ? trip.bookings.findIndex((b) => b.id === need.leg.id) : -1;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-10">
@@ -185,36 +217,51 @@ export function Console() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <Eyebrow>
-            {trip.date.replace(/ \d{4}$/, "")} · with {companion}
+            {trip.date}
+            {trip.companion && ` · with ${trip.companion.replace(/^(?:her|his|their|my) /, "")}`}
+            {example && " · example"}
           </Eyebrow>
-          <h1 className="mt-1.5 text-4xl font-bold leading-[1.05] md:text-5xl">Your trip to {city}</h1>
-          <p className="mt-2 text-muted">
-            {trip.traveller} and {trip.companion}, for {event.title} at {fmt(event.at!).replace("Tue", "Tuesday")}.
-          </p>
+          <h1 className="mt-1.5 text-4xl font-bold leading-[1.05] md:text-5xl">Your trip{city && ` to ${city}`}</h1>
+          {event && (
+            <p className="mt-2 text-muted">
+              For {event.title} at {fmt(event.at!)}.
+            </p>
+          )}
         </div>
-        <div className="flex items-center gap-3">
-          <p className="typed rounded-full bg-surface px-3 py-1.5 text-sm tabular shadow-[0_2px_0_var(--edge)]" aria-live="polite">
-            <span className="text-muted">Now </span>
-            <FlipText text={fmt(s?.detectedAt ?? IDLE_CLOCK)} />
-          </p>
-          {s && (
-            <button type="button" onClick={reset} className="inline-flex items-center gap-1.5 rounded-full border-2 border-text px-3 py-1 text-sm font-semibold transition active:scale-[0.97]">
-              <ArrowCounterClockwise size={15} aria-hidden /> Reset
-            </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {example && (
+            <p className="typed rounded-full bg-surface px-3 py-1.5 text-sm tabular shadow-[0_2px_0_var(--edge)]" aria-live="polite">
+              <span className="text-muted">Now </span>
+              <FlipText text={fmt(s?.detectedAt ?? 600)} />
+            </p>
+          )}
+          {s ? (
+            <Button kind="line" onClick={reset}>
+              <ArrowCounterClockwise size={15} aria-hidden /> Back to my trip
+            </Button>
+          ) : (
+            <>
+              <Button kind="line" onClick={() => setEditing(true)}>
+                <PencilSimple size={15} aria-hidden /> Edit bookings
+              </Button>
+              <Button kind="quiet" onClick={() => confirm("Start a new trip? This one will be removed from this device.") && saveTrip(null)}>
+                New trip
+              </Button>
+            </>
           )}
         </div>
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-6">
-          <Panel title="Your bookings" aside={s ? <Status bad>{`${affected} of ${nodes.length} affected`}</Status> : <Status>Watching {nodes.length} bookings · all on time</Status>}>
+          <Panel title="Your bookings" aside={s && affected ? <Status bad>{`${affected} of ${nodes.length} affected`}</Status> : <Status>Watching {nodes.length} bookings</Status>}>
             <ol aria-label="Your bookings" className="grid gap-2">
               {nodes.map((n, i) => {
                 const [look, st] = stamp(n, delayOf(n.leg.id));
                 return <Ticket key={`${s?.id}-${n.leg.id}`} leg={n.leg} look={look} stamp={st} i={i} />;
               })}
             </ol>
-            {!s && <p className="mt-4 text-sm text-muted">Everything is on time. Send a disruption from the panel to break a booking and watch Domino repair the trip.</p>}
+            {!s && <p className="mt-4 text-sm text-muted">Something changed? Tell Domino in the panel on the right and it checks every booking that depends on it.</p>}
           </Panel>
 
           <AnimatePresence>
@@ -226,35 +273,39 @@ export function Console() {
                 animate={{ opacity: 1, y: 0, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.5, ease }}
-                className="scroll-mt-6 overflow-hidden rounded-[22px] border-2 border-bad bg-surface"
+                className={`scroll-mt-6 overflow-hidden rounded-[22px] border-2 bg-surface ${need || !mine ? "border-bad" : "border-good"}`}
                 role="alert"
               >
                 <div className="p-4 md:p-6">
-                  <Eyebrow className="!text-bad">
-                    Detected {clock(s.detectedAt)}
-                    {s.airlineAnnouncesAt && ` · ${s.airlineAnnouncesAt - s.detectedAt} min before IndiGo`}
+                  <Eyebrow className={need || !mine ? "!text-bad" : "!text-good"}>
+                    {mine ? "You reported" : `Detected ${clock(s.detectedAt)}`}
+                    {s.airlineAnnouncesAt && ` · ${s.airlineAnnouncesAt - s.detectedAt} min before the airline`}
                   </Eyebrow>
                   <h2 className="mt-1.5 flex items-start gap-2 text-2xl font-bold md:text-3xl">
-                    <Lightning size={24} weight="fill" className="mt-1 shrink-0 text-bad" aria-hidden />
+                    <Lightning size={24} weight="fill" className={`mt-1 shrink-0 ${need || !mine ? "text-bad" : "text-good"}`} aria-hidden />
                     {s.headline}
                   </h2>
-                  <ul className="mt-3 space-y-1.5 text-sm text-muted">
-                    {s.signals.map((sig, i) => (
-                      <motion.li key={sig} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + i * 0.15 }}>
-                        {sig}
-                      </motion.li>
-                    ))}
-                  </ul>
-                  {(hit || atRisk.length > 0) && (
-                    <p className="mt-3 text-sm font-semibold text-bad">
-                      {hit && `${hit.reason}. `}
-                      {atRisk.length > 0 && `${`Your ${atRisk.join(", ").replace(/, ([^,]+)$/, " and $1")}`.replace("Your the", "The")} ${atRisk.length > 1 ? "are" : "is"} at risk.`}
-                    </p>
+                  {s.signals.length > 0 && (
+                    <ul className="mt-3 space-y-1.5 text-sm text-muted">
+                      {s.signals.map((sig) => (
+                        <li key={sig}>{sig}</li>
+                      ))}
+                    </ul>
                   )}
+                  <ul className="mt-3 space-y-1 text-sm font-semibold">
+                    {nodes
+                      .filter((n) => n.status === "broken" || n.status === "at-risk" || n.status === "delayed")
+                      .map((n) => (
+                        <li key={n.leg.id} className={n.status === "delayed" ? "text-late" : "text-bad"}>
+                          {n.leg.title.split(", ")[0]}: {n.reason}
+                        </li>
+                      ))}
+                  </ul>
+                  {mine && !need && <p className="mt-3 text-sm font-semibold text-good">Nothing else breaks. Every booking after it still works, so there&apos;s nothing to fix.</p>}
                   {s.airlineAnnouncesAt && (
                     <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl bg-bg px-4 py-3 text-sm">
                       <p>
-                        <span className="text-muted">IndiGo app says </span>
+                        <span className="text-muted">Airline app says </span>
                         <span className="typed font-bold" style={{ color: airlineSaid ? "var(--late)" : "var(--good)" }}>
                           <FlipText text={airlineSaid ? "DELAYED 2H" : "ON TIME"} />
                         </span>
@@ -273,7 +324,81 @@ export function Console() {
             )}
           </AnimatePresence>
 
-          {s && (
+          {need && (
+            <Panel title="Find a way through" aside={<MagnifyingGlass size={20} aria-hidden className="text-muted" />}>
+              <dl className="grid grid-cols-1 gap-3 rounded-[14px] bg-surface p-4 shadow-[0_2px_0_var(--edge)] sm:grid-cols-3">
+                <div>
+                  <dt className="text-xs text-muted">Get from</dt>
+                  <dd className="font-semibold">
+                    {need.from} → {need.to}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">{need.leg.mode === "hotel" ? "Arriving around" : "Leaving after"}</dt>
+                  <dd className="typed font-bold">{dateLabel(need.after, week).slice(0, 10)} {clock(need.after)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">{need.leg.mode === "hotel" ? "Need a room" : "Arrive by"}</dt>
+                  <dd className="typed font-bold">{need.leg.mode === "hotel" ? "tonight" : need.by !== null ? `${dateLabel(need.by, week).slice(0, 10)} ${clock(need.by)}` : "as soon as you can"}</dd>
+                </div>
+              </dl>
+              <p className="mt-4 text-sm text-muted">Search these, then tell Domino what you found. It checks every option against the rest of your trip and your limits.</p>
+              <ul className="mt-3 grid gap-2">
+                {strategies(trip, need).map((st) => {
+                  const Ico = ICON[st.mode];
+                  return (
+                    <li key={st.label} className="flex flex-wrap items-center gap-3 rounded-[14px] bg-surface p-3 shadow-[0_2px_0_var(--edge)]">
+                      <Ico size={18} aria-hidden className="shrink-0" />
+                      <span className="min-w-0 flex-1 text-sm font-semibold">{st.label}</span>
+                      <span className="flex flex-wrap gap-1.5">
+                        {st.links.map((l) => (
+                          <a key={l.url} href={l.url} target="_blank" rel="noreferrer" className="typed inline-flex items-center gap-1 rounded border-2 border-line px-2 py-1 text-xs hover:border-text">
+                            {l.name} <ArrowSquareOut size={12} aria-hidden />
+                          </a>
+                        ))}
+                        <button type="button" onClick={() => startAdding(st.mode)} className="typed rounded bg-accent px-2.5 py-1 text-xs font-bold text-on-accent">
+                          I found one
+                        </button>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {adding && (
+                <div ref={addRef} className="mt-4 rounded-[14px] border-2 border-text bg-surface p-4">
+                  <p className="mb-3 font-semibold">What did you find?</p>
+                  <LegFields d={adding.draft} onChange={(draft) => setAdding({ ...adding, draft })} />
+                  <fieldset className="mt-3">
+                    <legend className="typed mb-1 text-[11px] uppercase tracking-[0.1em] text-muted">It replaces</legend>
+                    <div className="flex flex-wrap gap-2">
+                      {trip.bookings.slice(breakIdx).filter((b) => b.mode !== "event").map((b) => (
+                        <label key={b.id} className="flex items-center gap-1.5 rounded border-2 border-line px-2 py-1 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={adding.replaces.includes(b.id)}
+                            onChange={(e) => setAdding({ ...adding, replaces: e.target.checked ? [...adding.replaces, b.id] : adding.replaces.filter((x) => x !== b.id) })}
+                          />
+                          {b.title.split(", ")[0]}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <Button onClick={addFound} disabled={!!addProblem || adding.replaces.length === 0}>
+                      Check it
+                    </Button>
+                    <Button kind="quiet" onClick={() => setAdding(null)}>
+                      Cancel
+                    </Button>
+                    {addProblem && <span className="text-xs font-semibold text-bad">{addProblem}</span>}
+                  </div>
+                </div>
+              )}
+            </Panel>
+          )}
+
+          {(agent.steps.length > 0 || agent.running) && (
             <Panel
               title="Agent"
               aside={
@@ -299,25 +424,34 @@ export function Console() {
                   </li>
                 )}
               </ol>
-              {agent.error && <p className="mt-3 text-sm text-bad">{agent.error}. Press Reset and try again.</p>}
+              {agent.error && <p className="mt-3 text-sm text-bad">{agent.error}. Try again.</p>}
             </Panel>
           )}
 
           <AnimatePresence mode="wait">
-            {rows.length > 0 && !approved && (
+            {showRows && !approved && (
               <motion.div key="plans" exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.3 }}>
-                <Panel title="Here's how to fix it">
-                  {agent.result && <p className="mb-4 text-sm text-muted">{agent.result.summary}</p>}
+                <Panel
+                  title={mine ? "Your options, checked" : "Here's how to fix it"}
+                  aside={
+                    mine && (
+                      <Button kind="line" onClick={compare} disabled={agent.running || !!fresh}>
+                        <Sparkle size={15} aria-hidden /> {fresh ? "Compared by AI" : agent.running ? "Comparing…" : "Compare with AI"}
+                      </Button>
+                    )
+                  }
+                >
+                  {fresh && <p className="mb-4 text-sm text-muted">{fresh.summary}</p>}
                   <Plans rows={rows} selected={pickedId} onSelect={setSelected} />
                   <div className="mt-5 flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      disabled={!chosen}
-                      onClick={() => setApproved(true)}
-                      className="inline-flex items-center gap-2 rounded-[14px] bg-accent px-6 py-3.5 font-bold text-on-accent transition active:scale-[0.98] disabled:opacity-40"
-                    >
-                      Approve and book <ArrowRight size={18} weight="bold" aria-hidden />
-                    </button>
+                    <Button onClick={() => setApproved(true)} disabled={!chosen || chosen.hardFails.length > 0}>
+                      {mine ? "Go with this" : "Approve and book"} <ArrowRight size={18} weight="bold" aria-hidden />
+                    </Button>
+                    {mine && (
+                      <Button kind="quiet" onClick={() => need && startAdding(need.leg.mode === "hotel" ? "hotel" : need.leg.mode)}>
+                        Add another option
+                      </Button>
+                    )}
                     <p className="text-xs text-muted">Times, prices and limits are checked by code. The AI only explains the trade-offs.</p>
                   </div>
                 </Panel>
@@ -344,22 +478,26 @@ export function Console() {
                         sub={l.mode === "hotel" && chosen.lateCheckIn ? `Late check-in ${clock(chosen.arrival + (l.connectMin ?? 20))}` : undefined}
                       />
                     ))}
-                    <Ticket leg={event} i={chosen.steps.length} look="kept" stamp="ON TIME" />
+                    {event && <Ticket leg={event} i={chosen.steps.length} look="kept" stamp="ON TIME" />}
                   </ol>
                   <dl className="mt-5 grid grid-cols-2 gap-4 border-t-2 border-dashed border-line pt-4 md:grid-cols-4">
                     {[
-                      [`Arrive ${city}`, fmt(chosen.arrival), chosen.arrival > plannedArrival ? `${dur(chosen.arrival - plannedArrival)} later than planned` : "as planned"],
-                      [chosen.extraCost < 0 ? "You get back" : "Extra cost", rupees(Math.abs(chosen.extraCost)), "after refunds, for 2"],
+                      [`Arrive${city ? ` ${city}` : ""}`, fmt(chosen.arrival), ""],
+                      [chosen.extraCost < 0 ? "You get back" : "Extra cost", rupees(Math.abs(chosen.extraCost)), mine ? "before refunds you claim" : "after refunds"],
                       ["Changes", String(chosen.changes), "new bookings"],
-                      ["Before muhurtham", chosen.buffer !== null ? dur(chosen.buffer) : "n/a", "spare time"],
+                      [event ? "Spare before it starts" : "Spare time", chosen.buffer !== null ? dur(chosen.buffer) : "n/a", ""],
                     ].map(([k, v, sub], i) => (
                       <motion.div key={k} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + i * 0.08 }}>
                         <dt className="text-xs text-muted">{k}</dt>
                         <dd className="serif mt-1 text-2xl font-bold tabular">{v}</dd>
-                        <dd className="text-xs text-muted">{sub}</dd>
+                        {sub && <dd className="text-xs text-muted">{sub}</dd>}
                       </motion.div>
                     ))}
                   </dl>
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <Button onClick={saveRepaired}>Save as my trip</Button>
+                    <span className="text-xs text-muted">Replaces your bookings with this chain, so Domino keeps watching the new one.</span>
+                  </div>
                 </Panel>
                 <Panel title="Ready to send">
                   <Actions key={chosen.plan.id} actions={actions} />
@@ -370,31 +508,69 @@ export function Console() {
         </div>
 
         <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-          <Panel title="Send a disruption" aside={<span className="typed text-[11px] text-muted">DEMO</span>}>
-            <div className="grid gap-2">
-              {scenarios.map((sc) => {
-                const Ico = CHAOS_ICON[sc.id] ?? Lightning;
-                const active = sc.id === scenarioId;
-                return (
-                  <motion.button
-                    key={sc.id}
+          <Panel title="Something went wrong?">
+            <div className="grid gap-3">
+              <Field label="Which booking">
+                <select value={report.booking} onChange={(e) => setReport({ ...report, booking: e.target.value, kind: legs.find((b) => b.id === e.target.value)?.mode === "hotel" ? "cancel" : report.kind })} className={input}>
+                  {legs.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.title.split(", ")[0]}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <div className="flex gap-2" role="radiogroup" aria-label="What happened">
+                {(["delay", "cancel"] as const).map((k) => (
+                  <button
+                    key={k}
                     type="button"
-                    whileTap={{ scale: 0.98 }}
-                    disabled={agent.running}
-                    onClick={() => trigger(sc.id)}
-                    className={`flex items-center gap-3 rounded-[14px] border-2 bg-surface p-3 text-left shadow-[0_2px_0_var(--edge)] transition-colors disabled:opacity-50 ${active ? "border-bad" : "border-transparent hover:border-line"}`}
+                    role="radio"
+                    aria-checked={report.kind === k}
+                    disabled={k === "delay" && legs.find((b) => b.id === report.booking)?.mode === "hotel"}
+                    onClick={() => setReport({ ...report, kind: k })}
+                    className={`flex-1 rounded-[10px] border-2 px-3 py-2 text-sm font-semibold disabled:opacity-40 ${report.kind === k ? "border-text bg-surface" : "border-line"}`}
                   >
-                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-2">
-                      <Ico size={18} aria-hidden />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold">{sc.chaos}</span>
-                      <span className="block truncate text-xs text-muted">{sc.airlineAnnouncesAt ? "Predicted before the airline says so" : sc.headline}</span>
-                    </span>
-                  </motion.button>
-                );
-              })}
+                    {k === "delay" ? "Delayed" : "Cancelled"}
+                  </button>
+                ))}
+              </div>
+              {report.kind === "delay" && (
+                <Field label="By how long">
+                  <select value={report.minutes} onChange={(e) => setReport({ ...report, minutes: Number(e.target.value) })} className={input}>
+                    {[30, 60, 90, 120, 180, 240, 360, 480].map((m) => (
+                      <option key={m} value={m}>
+                        {dur(m)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+              <Button onClick={submitReport} disabled={!report.booking}>
+                Check my trip
+              </Button>
             </div>
+            {example && (
+              <div className="mt-5 border-t-2 border-dashed border-line pt-4">
+                <Eyebrow className="mb-2">Or try a ready-made disruption</Eyebrow>
+                <div className="grid gap-2">
+                  {scenarios.map((sc) => {
+                    const Ico = CHAOS_ICON[sc.id] ?? Lightning;
+                    return (
+                      <button
+                        key={sc.id}
+                        type="button"
+                        disabled={agent.running}
+                        onClick={() => trigger(sc.id)}
+                        className={`flex items-center gap-3 rounded-[14px] border-2 bg-surface p-2.5 text-left shadow-[0_2px_0_var(--edge)] transition-colors disabled:opacity-50 ${sc.id === s?.id ? "border-bad" : "border-transparent hover:border-line"}`}
+                      >
+                        <Ico size={18} aria-hidden className="shrink-0" />
+                        <span className="text-sm font-semibold">{sc.chaos}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </Panel>
 
           <Panel title="Your limits">
@@ -405,23 +581,25 @@ export function Console() {
               id="limits"
               value={text}
               onChange={(e) => setText(e.target.value)}
+              onBlur={persistLimits}
               rows={4}
-              className="mt-1.5 w-full resize-none rounded-xl border-2 border-line bg-surface p-3 text-sm leading-relaxed text-text placeholder:text-muted focus:border-text focus:outline-none"
+              className={`${input} mt-1.5 resize-none leading-relaxed`}
             />
-            <Chips c={agent.constraints ?? parseConstraints(text)} />
-            {!agent.constraints && <p className="mt-2 text-xs text-muted">The agent turns this into hard and soft limits when a disruption hits.</p>}
+            <Chips c={c} />
           </Panel>
 
-          <Link
-            href={`/stranded?s=${scenarioId ?? "inbound-delay"}`}
-            className="flex items-center justify-between rounded-[22px] bg-surface p-4 text-sm shadow-[0_2px_0_var(--edge)] transition-transform active:scale-[0.99]"
-          >
-            <span>
-              <span className="block font-semibold">Stranded mode</span>
-              <span className="text-xs text-muted">Low battery? The same recovery as a 1, 2, 3 chat</span>
-            </span>
-            <ArrowRight size={18} aria-hidden />
-          </Link>
+          {example && (
+            <Link
+              href={`/stranded?s=${s && !mine ? s.id : "inbound-delay"}`}
+              className="flex items-center justify-between rounded-[22px] bg-surface p-4 text-sm shadow-[0_2px_0_var(--edge)] transition-transform active:scale-[0.99]"
+            >
+              <span>
+                <span className="block font-semibold">Stranded mode</span>
+                <span className="text-xs text-muted">Low battery? The same recovery as a 1, 2, 3 chat</span>
+              </span>
+              <ArrowRight size={18} aria-hidden />
+            </Link>
+          )}
         </aside>
       </div>
     </div>

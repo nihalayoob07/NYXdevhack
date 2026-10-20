@@ -16,9 +16,9 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. Pages: `/` the app (pick a disruption in "Send a disruption" to start), `/stranded` low-battery chat mode. `/demo` redirects to `/`.
+Open http://localhost:3000. `/` asks for your trip: paste booking confirmations (needs `GROQ_API_KEY`) or add them by hand, or press "Try an example trip". Your trip is saved in the browser. `/stranded` is the low-battery chat mode (example trip).
 
-To use the live AI, copy `web/.env.example` to `web/.env.local` and set `GROQ_API_KEY` (free at console.groq.com). Without a key the demo uses the built-in planner, which runs the same steps.
+To use the AI, copy `web/.env.example` to `web/.env.local` and set `GROQ_API_KEY` (free at console.groq.com). It reads pasted bookings and explains options. Without a key you add bookings by hand and the built-in planner explains options.
 
 `npm run check` verifies the engine still produces the demo story.
 

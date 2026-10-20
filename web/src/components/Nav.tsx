@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { trip } from "@/lib/world";
+import { Avatar } from "@/components/app/Avatar";
 
 // Two dominoes, the first one falling.
 export function Logo() {
@@ -10,11 +10,6 @@ export function Logo() {
     </svg>
   );
 }
-
-const initials = trip.traveller
-  .split(" ")
-  .map((w) => w[0])
-  .join("");
 
 export function Nav() {
   return (
@@ -31,9 +26,7 @@ export function Nav() {
           <Link href="/stranded" className="rounded-full px-3 py-2 font-semibold text-muted transition-colors hover:text-text">
             Stranded mode
           </Link>
-          <span className="ml-2 grid size-[34px] place-items-center rounded-full bg-text text-xs font-bold text-bg" aria-label={trip.traveller}>
-            {initials}
-          </span>
+          <Avatar />
         </div>
       </nav>
     </header>

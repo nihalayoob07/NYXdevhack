@@ -24,7 +24,8 @@ export function useAgent() {
     setState(EMPTY);
   }, []);
 
-  const run = useCallback(async (scenarioId: string, constraints: string) => {
+  // body: { scenarioId, constraints } for the example trip, or { trip, scenario, constraints }.
+  const run = useCallback(async (body: Record<string, unknown>) => {
     abort.current?.abort();
     const ctrl = (abort.current = new AbortController());
     setState({ ...EMPTY, running: true });
@@ -49,7 +50,7 @@ export function useAgent() {
       const res = await fetch("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scenarioId, constraints }),
+        body: JSON.stringify(body),
         signal: ctrl.signal,
       });
       if (!res.ok || !res.body) throw new Error(`Agent request failed (${res.status})`);

@@ -9,6 +9,9 @@ summary: Lightweight decision log. Add new decisions at the top.
 
 Format: date, decision, why, who.
 
+### 2026-10-20: The MVP is the real product, not a simulation
+Anyone can add their own trip (paste confirmations or type them), report what went wrong, and fix it. No live inventory API: Domino gives prefilled real searches and checks whatever the traveller finds, so every number is real or typed by them. Drafts open in WhatsApp or the email app. Trip saved in the browser, no accounts. The old simulated trip stays as "Try an example trip". Why: an MVP has to be usable by a real traveller. (Nihal)
+
 ### 2026-10-20: The site is the product: ticket stack app
 `/` is now Domino itself, the full product (the former demo console with every feature) restyled in the "ticket stack" look from `10-project/design/ticket-stack-preview.html`: paper palette, Fraunces headings, Space Mono tickets, bookings as tickets with rubber stamps. The landing page that explained the product was removed. The "frozen glass" preview was dropped. Light only. Why: judges should use the product, not read about it. (Nihal)
 

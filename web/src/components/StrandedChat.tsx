@@ -61,7 +61,7 @@ export function StrandedChat({ s }: { s: Scenario }) {
       if (t === "V") return say(acts.find((a) => a.kind === "claim" || a.kind === "refund")?.body ?? acts[0].body);
       if (t === "S") {
         setStage("done");
-        return say(`Sent (demo). ${trip.waitingFor.name} knows you arrive around ${fmt(e.arrival).slice(4)}. Safe travels.`);
+        return say(`Sent (demo). ${trip.waitingFor?.name ?? "Your family"} knows you arrive around ${fmt(e.arrival).slice(4)}. Safe travels.`);
       }
       return say("Reply S to send all, or V to read one.");
     }

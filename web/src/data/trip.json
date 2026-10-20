@@ -2,6 +2,8 @@
   "traveller": "Ananya Rao",
   "companion": "her mother, Lakshmi (68)",
   "date": "Mon 26 Oct 2026",
+  "week": "2026-10-26",
+  "passengers": 2,
   "waitingFor": { "name": "Meera", "relation": "cousin, waiting in Mysuru" },
   "defaultConstraints": "Must reach Mysuru by 9am Tuesday, max ₹4,000 extra, no overnight buses. Travelling with my mum, who can't do long layovers.",
   "bookings": [

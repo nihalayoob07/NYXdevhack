@@ -1,5 +1,7 @@
 import { z } from "zod";
 import {
+  DAYS,
+  dayAt,
   draftActions,
   dur,
   evaluatePlan,
@@ -9,14 +11,17 @@ import {
   parseConstraints,
   rankPlans,
   rupees,
+  tripStart,
   type ChainNode,
   type Constraints,
   type Evaluated,
   type Scenario,
+  type Trip,
+  type Verdict,
+  verdictOf,
 } from "./engine";
-import { trip } from "./world";
 
-export type Verdict = "recommended" | "backup" | "risky" | "ruled-out";
+export type { Verdict };
 export type AgentEvent =
   | { type: "mode"; mode: "ai" | "offline" }
   | { type: "step"; tool: string; text: string }
@@ -46,27 +51,21 @@ const constraintsText = (c: Constraints) =>
     .filter(Boolean)
     .join(", ");
 
-function verdictOf(e: Evaluated, i: number): Verdict {
-  if (e.hardFails.length) return "ruled-out";
-  if (i === 0) return "recommended";
-  return e.risky ? "risky" : "backup";
-}
-
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // Same steps as the AI agent, with the engine's own explanations. Used without an API key
 // and as the safety net if the API call fails mid-demo.
-async function runOffline(s: Scenario, text: string, emit: Emit, fast = false) {
+async function runOffline(trip: Trip, s: Scenario, text: string, emit: Emit, fast = false) {
   const wait = (ms: number) => (fast ? Promise.resolve() : pause(ms));
   emit({ type: "step", tool: "get_bookings", text: `Loaded ${trip.bookings.length} linked bookings: ${trip.bookings.map((b) => b.title).join(" → ")}` });
   await wait(500);
   emit({ type: "step", tool: "find_affected", text: chainText(findAffected(trip, s)) });
   await wait(650);
-  const c = parseConstraints(text);
+  const c = parseConstraints(text, tripStart(trip));
   emit({ type: "constraints", constraints: c });
   emit({ type: "step", tool: "parse_constraints", text: constraintsText(c) || "No hard limits found" });
   await wait(550);
-  emit({ type: "step", tool: "search_alternatives", text: `${s.plans.length} candidate recoveries from live inventory` });
+  emit({ type: "step", tool: "search_alternatives", text: `${s.plans.length} recovery option${s.plans.length === 1 ? "" : "s"} to check` });
   await wait(600);
   const ranked = rankPlans(trip, s, c);
   emit({ type: "step", tool: "check_constraints", text: checkText(ranked) });
@@ -110,7 +109,7 @@ const fn = (name: string, description: string, properties: Record<string, object
 
 const TOOLS = [
   fn("check_constraints", "Check every candidate plan against the traveller's limits with exact arithmetic. Returns feasibility, arrival buffer, extra cost, notes and a comparable score. Leave out any limit the traveller did not give.", {
-    deadline_day: { type: "string", enum: ["Mon", "Tue", "Wed"], description: "Day of the arrival deadline" },
+    deadline_day: { type: "string", enum: DAYS, description: "Day of the arrival deadline" },
     deadline_time: { type: "string", description: "24h HH:MM" },
     budget_inr: { type: "number", description: "Max extra spend in rupees" },
     no_overnight_bus: { type: "boolean" },
@@ -121,7 +120,7 @@ const TOOLS = [
 
 // Everything the model returns is parsed, not trusted.
 const ConstraintArgs = z.object({
-  deadline_day: z.enum(["Mon", "Tue", "Wed"]).nullish(),
+  deadline_day: z.enum(DAYS as [string, ...string[]]).nullish(),
   deadline_time: z.string().regex(/^\d{1,2}:\d{2}$/).nullish(),
   budget_inr: z.number().nullish(),
   no_overnight_bus: z.boolean().default(false),
@@ -136,7 +135,7 @@ const RecommendArgs = z.object({
 type ToolCall = { id: string; function: { name: string; arguments: string } };
 type ChatMessage = { role: string; content?: string | null; tool_calls?: ToolCall[]; tool_call_id?: string };
 
-async function runGroq(s: Scenario, text: string, emit: Emit) {
+async function runGroq(trip: Trip, s: Scenario, text: string, emit: Emit) {
   let constraints: Constraints | null = null;
   const step = (tool: string, t: string) => emit({ type: "step", tool, text: t });
   const planView = (e: Evaluated) => ({
@@ -156,7 +155,8 @@ async function runGroq(s: Scenario, text: string, emit: Emit) {
   const nodes = findAffected(trip, s);
   step("find_affected", chainText(nodes));
   const affected = nodes.map((n) => ({ booking: n.leg.title, status: n.status, reason: n.reason }));
-  step("search_alternatives", `${s.plans.length} candidate recoveries from live inventory`);
+  step("search_alternatives", `${s.plans.length} recovery option${s.plans.length === 1 ? "" : "s"} to check`);
+  const start = tripStart(trip);
   const loose: Constraints = { deadline: null, budget: null, noOvernightBus: false, maxLayover: null, companion: null };
   const candidates = s.plans.map((p) => planView(evaluatePlan(trip, s, p, loose)));
 
@@ -164,7 +164,7 @@ async function runGroq(s: Scenario, text: string, emit: Emit) {
     const i = ConstraintArgs.parse(args);
     const [h, m] = (i.deadline_time ?? "").split(":").map(Number);
     constraints = {
-      deadline: i.deadline_day && i.deadline_time ? ["Mon", "Tue", "Wed"].indexOf(i.deadline_day) * 1440 + h * 60 + (m || 0) : null,
+      deadline: i.deadline_day && i.deadline_time ? dayAt(DAYS.indexOf(i.deadline_day), start) + h * 60 + (m || 0) : null,
       budget: i.budget_inr ?? null,
       noOvernightBus: i.no_overnight_bus,
       maxLayover: i.max_layover_minutes ?? null,
@@ -215,7 +215,7 @@ async function runGroq(s: Scenario, text: string, emit: Emit) {
 
   // 2: it explains the engine's results. JSON mode, because Groq rejects forced tool calls that the
   // model formats loosely, which happened with the nested ranked array.
-  const order = rankPlans(trip, s, constraints ?? parseConstraints(text)).map((e) => e.plan.id);
+  const order = rankPlans(trip, s, constraints ?? parseConstraints(text, tripStart(trip))).map((e) => e.plan.id);
   messages.push({
     role: "user",
     content: `Now reply with JSON only: {"summary": one sentence on what happened and what you recommend, "ranked": [{"plan_id", "verdict": "recommended" | "backup" | "risky" | "ruled-out", "explanation"}]}. Use exactly this order, best first: ${order.join(", ")}. Recommend ${order[0]} in the summary. Only say "Risky." when buffer_before_deadline is under 1h.`,
@@ -225,7 +225,7 @@ async function runGroq(s: Scenario, text: string, emit: Emit) {
   const out = { result: rec.success ? { summary: rec.data.summary, ranked: rec.data.ranked.map((r) => ({ planId: r.plan_id, verdict: r.verdict, explanation: r.explanation })) } : null };
 
   // The engine has the final say on feasibility, whatever the model wrote.
-  const c = constraints ?? parseConstraints(text);
+  const c = constraints ?? parseConstraints(text, tripStart(trip));
   const ranked = rankPlans(trip, s, c);
   step("build_itinerary", `Top pick: ${ranked[0].plan.label}`);
   step("draft_messages", `${draftActions(trip, s, ranked[0]).length} messages drafted, waiting for your approval`);
@@ -241,17 +241,17 @@ async function runGroq(s: Scenario, text: string, emit: Emit) {
   });
 }
 
-export async function runAgent(s: Scenario, text: string, emit: Emit) {
+export async function runAgent(trip: Trip, s: Scenario, text: string, emit: Emit) {
   if (!process.env.GROQ_API_KEY) {
     emit({ type: "mode", mode: "offline" });
-    return runOffline(s, text, emit);
+    return runOffline(trip, s, text, emit);
   }
   emit({ type: "mode", mode: "ai" });
   try {
-    await runGroq(s, text, emit);
+    await runGroq(trip, s, text, emit);
   } catch (err) {
     console.error("agent failed, falling back to the built-in planner", err);
     emit({ type: "step", tool: "fallback", text: "The AI didn't answer in time, finishing with the built-in planner" });
-    await runOffline(s, text, emit, true);
+    await runOffline(trip, s, text, emit, true);
   }
 }
