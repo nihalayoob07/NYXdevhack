@@ -252,7 +252,7 @@ export function Console({ saved }: { saved: Saved }) {
         </div>
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-6">
           <Panel title="Your bookings" aside={s && affected ? <Status bad>{`${affected} of ${nodes.length} affected`}</Status> : <Status>Watching {nodes.length} bookings</Status>}>
             <ol aria-label="Your bookings" className="grid gap-2">

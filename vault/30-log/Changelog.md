@@ -9,6 +9,11 @@ summary: Every change to the project, newest first. One entry per commit.
 
 Newest first. Use the [[Changelog entry]] template: date, who, what changed, why, notes touched.
 
+## 2026-10-20: Phone layout fixes (Nihal)
+**What:** On phones the page was wider than the screen (the main grid column grew to its content), so ticket stubs stuck out and routes were cut off. Grid column pinned to the screen width, tickets get a narrower stub, smaller type and stamp below 640px, panels use less padding, nav shows just "Stranded" on phones, panel headers wrap. Checked at 360px with normal and large Android text: no sideways scroll.
+**Why:** Most judges and travellers will open it on a phone.
+**Notes touched:** none (layout only)
+
 ## 2026-10-20: Renamed the product to Travv (Raahil)
 **What:** Every user-facing "Domino" is now "Travv": nav, page titles, product copy, console, setup, stranded mode, the agent prompt, README, vault and the ticket-stack preview. The overview note is now [[Travv Overview]]. Kept on purpose: the `DominoChain` component name, the `domino.trip.v1` storage key (renaming it would wipe trips people already saved) and the `domino-nyx` Vercel URLs. A follow-up commit restores `web/package-lock.json`, which a local Windows `npm install` had pruned by accident.
 **Why:** New product name.

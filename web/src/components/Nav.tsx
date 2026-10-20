@@ -19,12 +19,12 @@ export function Nav() {
           <Logo />
           Travv
         </Link>
-        <div className="flex items-center gap-1 text-sm">
-          <Link href="/" className="rounded-full px-3 py-2 font-semibold text-muted transition-colors hover:text-text">
+        <div className="flex items-center gap-1 whitespace-nowrap text-sm">
+          <Link href="/" className="hidden rounded-full px-3 py-2 font-semibold text-muted transition-colors hover:text-text sm:block">
             My trip
           </Link>
-          <Link href="/stranded" className="rounded-full px-3 py-2 font-semibold text-muted transition-colors hover:text-text">
-            Stranded mode
+          <Link href="/stranded" className="rounded-full px-2 py-2 font-semibold text-muted transition-colors hover:text-text sm:px-3">
+            Stranded<span className="hidden sm:inline"> mode</span>
           </Link>
           <Avatar />
         </div>

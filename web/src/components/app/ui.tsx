@@ -6,8 +6,8 @@ export const Eyebrow = ({ children, className = "" }: { children: React.ReactNod
 
 export function Panel({ title, children, aside, className = "" }: { title: string; children: React.ReactNode; aside?: React.ReactNode; className?: string }) {
   return (
-    <section className={`rounded-[22px] bg-bg p-4 shadow-[0_2px_0_#c9bfa9,0_30px_50px_-40px_rgb(60_40_20/0.55)] md:p-6 ${className}`}>
-      <div className="mb-4 flex items-center justify-between gap-3">
+    <section className={`rounded-[22px] bg-bg p-3 shadow-[0_2px_0_#c9bfa9,0_30px_50px_-40px_rgb(60_40_20/0.55)] sm:p-4 md:p-6 ${className}`}>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <h2 className="text-xl font-bold">{title}</h2>
         {aside}
       </div>
@@ -18,7 +18,7 @@ export function Panel({ title, children, aside, className = "" }: { title: strin
 
 export function Status({ bad, children }: { bad?: boolean; children: React.ReactNode }) {
   return (
-    <span className="typed inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1.5 text-xs font-semibold" style={{ color: bad ? "var(--bad)" : "var(--good)" }}>
+    <span className="typed inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-surface px-3 py-1.5 text-xs font-semibold" style={{ color: bad ? "var(--bad)" : "var(--good)" }}>
       <span className="pulse" />
       {children}
     </span>

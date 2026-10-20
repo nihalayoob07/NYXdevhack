@@ -109,6 +109,8 @@ button {
 .tk {
   position: relative;
   display: flex;
+  min-width: 0; /* let long names truncate instead of pushing the stub off a phone screen */
+  --stub: 56px;
   min-height: 64px;
   background: var(--card);
   border-radius: 12px;
@@ -118,7 +120,7 @@ button {
 .tk::after {
   content: "";
   position: absolute;
-  right: 70px;
+  right: var(--stub);
   width: 14px;
   height: 14px;
   border-radius: 50%;
@@ -131,24 +133,35 @@ button {
 .tk::after {
   bottom: -7px;
 }
+@media (min-width: 640px) {
+  .tk {
+    --stub: 70px;
+  }
+}
 .tk-stub {
-  width: 70px;
+  width: var(--stub);
+  flex-shrink: 0;
   border-left: 2px dashed var(--edge);
 }
 
 /* Rubber stamp lands with a thump. */
 .stamp {
   position: absolute;
-  right: 82px;
+  right: calc(var(--stub) + 10px);
   top: 50%;
   border: 2.5px solid currentColor;
   padding: 2px 8px;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 10px;
   border-radius: 4px;
   background: rgb(255 250 240 / 0.75);
   transform: translateY(-50%) rotate(-8deg);
   animation: stamp 0.45s 0.4s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+@media (min-width: 640px) {
+  .stamp {
+    font-size: 12px;
+  }
 }
 @keyframes stamp {
   from {
