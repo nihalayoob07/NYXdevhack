@@ -12,6 +12,7 @@ Team NYX, Devhack Sahyadri. **One delay shouldn't break your whole trip.**
 - [[Handoff]]: **where we left off and what to pick up next**
 - [[Travv Overview]]: problem, idea, pitch
 - [[Architecture]]: how the code is laid out and why
+- [[Tech Approach]]: the technical approach, slide-ready for the PPT
 - [[Demo Script]]: the 90-second judge walkthrough
 - [[Decisions]]: what we chose and why
 
