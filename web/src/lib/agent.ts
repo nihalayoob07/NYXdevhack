@@ -1,5 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import {
   draftActions,
@@ -20,7 +18,7 @@ import { trip } from "./world";
 
 export type Verdict = "recommended" | "backup" | "risky" | "ruled-out";
 export type AgentEvent =
-  | { type: "mode"; mode: "claude" | "offline" }
+  | { type: "mode"; mode: "ai" | "offline" }
   | { type: "step"; tool: string; text: string }
   | { type: "constraints"; constraints: Constraints }
   | { type: "result"; summary: string; ranked: { planId: string; verdict: Verdict; explanation: string }[] }
@@ -56,7 +54,7 @@ function verdictOf(e: Evaluated, i: number): Verdict {
 
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// Same steps as the Claude agent, with the engine's own explanations. Used without an API key
+// Same steps as the AI agent, with the engine's own explanations. Used without an API key
 // and as the safety net if the API call fails mid-demo.
 async function runOffline(s: Scenario, text: string, emit: Emit, fast = false) {
   const wait = (ms: number) => (fast ? Promise.resolve() : pause(ms));
@@ -86,9 +84,8 @@ async function runOffline(s: Scenario, text: string, emit: Emit, fast = false) {
 const SYSTEM = `You are Domino, an agent that repairs a traveller's whole trip after a disruption.
 The trip is a chain of linked bookings; one broken link can break the ones after it.
 
-Work in this order: get_bookings, find_affected, search_alternatives, then check_constraints with the
-traveller's limits translated from their own words, then build_itinerary and draft_messages for your top pick,
-then present_recommendation once.
+The bookings, the broken links and the candidate plan ids are in the first message. Call check_constraints
+once with the traveller's limits translated from their own words. Then you will be asked for the recommendation as JSON.
 
 Rules:
 - Never state a time, price or connection that a tool did not return. The tools are the source of truth.
@@ -96,12 +93,51 @@ Rules:
 - Explanations are one or two short sentences, written to the traveller, naming the real trade-off
   against the top pick (money, arrival buffer, changes, comfort for their companion). Say "Risky." when
   the buffer before the deadline is under an hour.
+- Every claim in an explanation must come from that plan's check_constraints fields: arrives, extra_cost,
+  changes, buffer_before_deadline, notes, legs. Quote the real numbers (times, rupees). A leg marked KEEP is
+  kept, not lost. A negative extra_cost is a saving: write "saves ₹190", never "-₹190". If a fact is not
+  in those fields, leave it out.
 - Plain words, no markdown, no em dashes.`;
 
-async function runClaude(s: Scenario, text: string, emit: Emit) {
-  const client = new Anthropic();
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+
+// Plain JSON Schema, written by hand so any OpenAI-compatible provider accepts it.
+const fn = (name: string, description: string, properties: Record<string, object> = {}, required: string[] = []) => ({
+  type: "function" as const,
+  function: { name, description, parameters: { type: "object", properties, required } },
+});
+
+const TOOLS = [
+  fn("check_constraints", "Check every candidate plan against the traveller's limits with exact arithmetic. Returns feasibility, arrival buffer, extra cost, notes and a comparable score. Leave out any limit the traveller did not give.", {
+    deadline_day: { type: "string", enum: ["Mon", "Tue", "Wed"], description: "Day of the arrival deadline" },
+    deadline_time: { type: "string", description: "24h HH:MM" },
+    budget_inr: { type: "number", description: "Max extra spend in rupees" },
+    no_overnight_bus: { type: "boolean" },
+    max_layover_minutes: { type: "number", description: "Longest acceptable idle wait between legs" },
+    companion: { type: "string", description: "Who they travel with, if that affects comfort, e.g. 'mum'" },
+  }, ["no_overnight_bus"]),
+];
+
+// Everything the model returns is parsed, not trusted.
+const ConstraintArgs = z.object({
+  deadline_day: z.enum(["Mon", "Tue", "Wed"]).nullish(),
+  deadline_time: z.string().regex(/^\d{1,2}:\d{2}$/).nullish(),
+  budget_inr: z.number().nullish(),
+  no_overnight_bus: z.boolean().default(false),
+  max_layover_minutes: z.number().nullish(),
+  companion: z.string().nullish(),
+});
+const RecommendArgs = z.object({
+  summary: z.string(),
+  ranked: z.array(z.object({ plan_id: z.string(), verdict: z.enum(["recommended", "backup", "risky", "ruled-out"]), explanation: z.string() })),
+});
+
+type ToolCall = { id: string; function: { name: string; arguments: string } };
+type ChatMessage = { role: string; content?: string | null; tool_calls?: ToolCall[]; tool_call_id?: string };
+
+async function runGroq(s: Scenario, text: string, emit: Emit) {
   let constraints: Constraints | null = null;
-  const out: { result: Extract<AgentEvent, { type: "result" }> | null } = { result: null }; // set inside a tool callback
   const step = (tool: string, t: string) => emit({ type: "step", tool, text: t });
   const planView = (e: Evaluated) => ({
     plan_id: e.plan.id,
@@ -112,121 +148,87 @@ async function runClaude(s: Scenario, text: string, emit: Emit) {
     changes: e.changes,
   });
 
-  const tools = [
-    betaZodTool({
-      name: "get_bookings",
-      description: "The traveller's linked bookings in order, with times.",
-      inputSchema: z.object({}),
-      run: async () => {
-        step("get_bookings", `Loaded ${trip.bookings.length} linked bookings: ${trip.bookings.map((b) => b.title).join(" → ")}`);
-        return JSON.stringify({ traveller: trip.traveller, companion: trip.companion, date: trip.date, bookings: trip.bookings.map((b) => ({ ...b, dep: b.dep && fmt(b.dep), arr: b.arr && fmt(b.arr), at: b.at && fmt(b.at), checkInBy: b.checkInBy && fmt(b.checkInBy) })) });
-      },
-    }),
-    betaZodTool({
-      name: "find_affected",
-      description: "Walk the booking chain under the current disruption and report which links break.",
-      inputSchema: z.object({}),
-      run: async () => {
-        const nodes = findAffected(trip, s);
-        step("find_affected", chainText(nodes));
-        return JSON.stringify(nodes.map((n) => ({ booking: n.leg.title, status: n.status, reason: n.reason })));
-      },
-    }),
-    betaZodTool({
-      name: "search_alternatives",
-      description: "Candidate recovery plans from current inventory, each a full chain from Delhi to Mysuru.",
-      inputSchema: z.object({}),
-      run: async () => {
-        step("search_alternatives", `${s.plans.length} candidate recoveries from live inventory`);
-        const loose: Constraints = { deadline: null, budget: null, noOvernightBus: false, maxLayover: null, companion: null };
-        return JSON.stringify(s.plans.map((p) => planView(evaluatePlan(trip, s, p, loose))));
-      },
-    }),
-    betaZodTool({
-      name: "check_constraints",
-      description: "Check every candidate plan against the traveller's limits with exact arithmetic. Returns feasibility, arrival buffer, extra cost, notes and a comparable score.",
-      inputSchema: z.object({
-        deadline_day: z.enum(["Mon", "Tue", "Wed"]).nullable().describe("Day of the arrival deadline, or null if none"),
-        deadline_time: z.string().nullable().describe("24h HH:MM, or null"),
-        budget_inr: z.number().nullable().describe("Max extra spend in rupees, or null"),
-        no_overnight_bus: z.boolean(),
-        max_layover_minutes: z.number().nullable().describe("Longest acceptable idle wait between legs, or null"),
-        companion: z.string().nullable().describe("Who they travel with, if that affects comfort, e.g. 'mum'"),
-      }),
-      run: async (i) => {
-        const [h, m] = (i.deadline_time ?? "").split(":").map(Number);
-        constraints = {
-          deadline: i.deadline_day && i.deadline_time ? ["Mon", "Tue", "Wed"].indexOf(i.deadline_day) * 1440 + h * 60 + (m || 0) : null,
-          budget: i.budget_inr,
-          noOvernightBus: i.no_overnight_bus,
-          maxLayover: i.max_layover_minutes,
-          companion: i.companion,
-        };
-        emit({ type: "constraints", constraints });
-        step("parse_constraints", constraintsText(constraints) || "No hard limits found");
-        const ranked = rankPlans(trip, s, constraints);
-        step("check_constraints", checkText(ranked));
-        return JSON.stringify(ranked.map((e) => ({ ...planView(e), feasible: !e.hardFails.length, ruled_out_because: e.hardFails, buffer_before_deadline: e.buffer === null ? null : dur(e.buffer), notes: e.notes, score: e.score })));
-      },
-    }),
-    betaZodTool({
-      name: "build_itinerary",
-      description: "Full step-by-step itinerary for one plan.",
-      inputSchema: z.object({ plan_id: z.string() }),
-      run: async ({ plan_id }) => {
-        const p = s.plans.find((x) => x.id === plan_id);
-        if (!p || !constraints) return "Unknown plan, or check_constraints has not run yet.";
-        step("build_itinerary", `Top pick: ${p.label}`);
-        return JSON.stringify(planView(evaluatePlan(trip, s, p, constraints)));
-      },
-    }),
-    betaZodTool({
-      name: "draft_messages",
-      description: "Draft the refund requests, compensation claims, hotel and family messages for one plan. They wait for the traveller's approval.",
-      inputSchema: z.object({ plan_id: z.string() }),
-      run: async ({ plan_id }) => {
-        const p = s.plans.find((x) => x.id === plan_id);
-        if (!p || !constraints) return "Unknown plan, or check_constraints has not run yet.";
-        const actions = draftActions(trip, s, evaluatePlan(trip, s, p, constraints));
-        step("draft_messages", `${actions.length} messages drafted, waiting for your approval`);
-        return JSON.stringify(actions.map((a) => a.title));
-      },
-    }),
-    betaZodTool({
-      name: "present_recommendation",
-      description: "Show the ranked options to the traveller. Call once, last. Include every plan, best first.",
-      inputSchema: z.object({
-        summary: z.string().describe("One sentence: what happened and what you recommend"),
-        ranked: z.array(z.object({ plan_id: z.string(), verdict: z.enum(["recommended", "backup", "risky", "ruled-out"]), explanation: z.string() })),
-      }),
-      run: async (i) => {
-        out.result = { type: "result", summary: i.summary, ranked: i.ranked.map((r) => ({ planId: r.plan_id, verdict: r.verdict, explanation: r.explanation })) };
-        return "Shown to the traveller.";
-      },
-    }),
+  // The read-only lookups run here instead of as tools: free tiers cap requests a
+  // minute (Groq: 8,000 tokens), so the model gets everything up front and a run is two calls. The engine
+  // drafts the messages itself, so that is not a model call either.
+  step("get_bookings", `Loaded ${trip.bookings.length} linked bookings: ${trip.bookings.map((b) => b.title).join(" → ")}`);
+  const bookings = { traveller: trip.traveller, companion: trip.companion, date: trip.date, bookings: trip.bookings.map((b) => ({ ...b, dep: b.dep && fmt(b.dep), arr: b.arr && fmt(b.arr), at: b.at && fmt(b.at), checkInBy: b.checkInBy && fmt(b.checkInBy) })) };
+  const nodes = findAffected(trip, s);
+  step("find_affected", chainText(nodes));
+  const affected = nodes.map((n) => ({ booking: n.leg.title, status: n.status, reason: n.reason }));
+  step("search_alternatives", `${s.plans.length} candidate recoveries from live inventory`);
+  const loose: Constraints = { deadline: null, budget: null, noOvernightBus: false, maxLayover: null, companion: null };
+  const candidates = s.plans.map((p) => planView(evaluatePlan(trip, s, p, loose)));
+
+  const checkConstraints = (args: unknown) => {
+    const i = ConstraintArgs.parse(args);
+    const [h, m] = (i.deadline_time ?? "").split(":").map(Number);
+    constraints = {
+      deadline: i.deadline_day && i.deadline_time ? ["Mon", "Tue", "Wed"].indexOf(i.deadline_day) * 1440 + h * 60 + (m || 0) : null,
+      budget: i.budget_inr ?? null,
+      noOvernightBus: i.no_overnight_bus,
+      maxLayover: i.max_layover_minutes ?? null,
+      companion: i.companion ?? null,
+    };
+    emit({ type: "constraints", constraints });
+    step("parse_constraints", constraintsText(constraints) || "No hard limits found");
+    const ranked = rankPlans(trip, s, constraints);
+    step("check_constraints", checkText(ranked));
+    return JSON.stringify(ranked.map((e) => ({ ...planView(e), feasible: !e.hardFails.length, ruled_out_because: e.hardFails, buffer_before_deadline: e.buffer === null ? null : dur(e.buffer), notes: e.notes, score: e.score })));
+  };
+
+  const messages: ChatMessage[] = [
+    { role: "system", content: SYSTEM },
+    {
+      role: "user",
+      content: `Disruption detected at ${fmt(s.detectedAt)}: ${s.headline}.\nSignals:\n- ${s.signals.join("\n- ")}\n\nBookings: ${JSON.stringify(bookings)}\nAffected: ${JSON.stringify(affected)}\nCandidate plan ids: ${candidates.map((c) => `${c.plan_id} (${c.label})`).join(", ")}. check_constraints returns their full details.\n\nThe traveller's limits, in their own words: "${text}"\n\nRepair the trip.`,
+    },
   ];
 
-  const final = await client.beta.messages.toolRunner({
-    model: "claude-opus-5-5",
-    max_tokens: 16000,
-    max_iterations: 14,
-    output_config: { effort: "low" }, // a live demo needs answers in seconds; the engine does the hard checking
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    system: SYSTEM,
-    tools,
-    messages: [
-      {
-        role: "user",
-        content: `Disruption detected at ${fmt(s.detectedAt)}: ${s.headline}.\nSignals:\n- ${s.signals.join("\n- ")}\n\nThe traveller's limits, in their own words: "${text}"\n\nRepair the trip.`,
-      },
-    ],
+  const groq = async (extra: object): Promise<ChatMessage | undefined> => {
+    const call = () =>
+      fetch(GROQ_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+        body: JSON.stringify({ model: GROQ_MODEL, messages, temperature: 0.2, reasoning_effort: "low", ...extra }),
+        signal: AbortSignal.timeout(30_000),
+      });
+    let res = await call();
+    // Free tier: 8,000 tokens a minute. A short wait beats dropping to the built-in planner.
+    const retryAfter = Number(res.headers.get("retry-after"));
+    if (res.status === 429 && retryAfter > 0 && retryAfter <= 8) {
+      step("rate_limit", `Free tier is busy, retrying in ${Math.ceil(retryAfter)}s`);
+      await pause(retryAfter * 1000);
+      res = await call();
+    }
+    if (!res.ok) throw new Error(`Groq ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    return (await res.json()).choices?.[0]?.message;
+  };
+
+  // Exactly two requests. 1: the model turns the traveller's words into limits and the engine checks
+  // every plan against them.
+  const first = await groq({ tools: TOOLS, tool_choice: { type: "function", function: { name: "check_constraints" } } });
+  const toolCall = first?.tool_calls?.[0];
+  if (!first || !toolCall) throw new Error("Model did not call check_constraints");
+  messages.push(first);
+  messages.push({ role: "tool", tool_call_id: toolCall.id, content: checkConstraints(JSON.parse(toolCall.function.arguments || "{}")) });
+
+  // 2: it explains the engine's results. JSON mode, because Groq rejects forced tool calls that the
+  // model formats loosely, which happened with the nested ranked array.
+  const order = rankPlans(trip, s, constraints ?? parseConstraints(text)).map((e) => e.plan.id);
+  messages.push({
+    role: "user",
+    content: `Now reply with JSON only: {"summary": one sentence on what happened and what you recommend, "ranked": [{"plan_id", "verdict": "recommended" | "backup" | "risky" | "ruled-out", "explanation"}]}. Use exactly this order, best first: ${order.join(", ")}. Recommend ${order[0]} in the summary. Only say "Risky." when buffer_before_deadline is under 1h.`,
   });
-  if (final.stop_reason === "refusal") throw new Error("Claude declined this request");
+  const second = await groq({ response_format: { type: "json_object" } });
+  const rec = RecommendArgs.safeParse(JSON.parse(second?.content ?? "null"));
+  const out = { result: rec.success ? { summary: rec.data.summary, ranked: rec.data.ranked.map((r) => ({ planId: r.plan_id, verdict: r.verdict, explanation: r.explanation })) } : null };
 
   // The engine has the final say on feasibility, whatever the model wrote.
   const c = constraints ?? parseConstraints(text);
   const ranked = rankPlans(trip, s, c);
+  step("build_itinerary", `Top pick: ${ranked[0].plan.label}`);
+  step("draft_messages", `${draftActions(trip, s, ranked[0]).length} messages drafted, waiting for your approval`);
   const said = new Map(out.result?.ranked.map((r) => [r.planId, r]) ?? []);
   emit({
     type: "result",
@@ -240,16 +242,16 @@ async function runClaude(s: Scenario, text: string, emit: Emit) {
 }
 
 export async function runAgent(s: Scenario, text: string, emit: Emit) {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.GROQ_API_KEY) {
     emit({ type: "mode", mode: "offline" });
     return runOffline(s, text, emit);
   }
-  emit({ type: "mode", mode: "claude" });
+  emit({ type: "mode", mode: "ai" });
   try {
-    await runClaude(s, text, emit);
+    await runGroq(s, text, emit);
   } catch (err) {
     console.error("agent failed, falling back to the built-in planner", err);
-    emit({ type: "step", tool: "fallback", text: "Claude didn't answer in time, finishing with the built-in planner" });
+    emit({ type: "step", tool: "fallback", text: "The AI didn't answer in time, finishing with the built-in planner" });
     await runOffline(s, text, emit, true);
   }
 }

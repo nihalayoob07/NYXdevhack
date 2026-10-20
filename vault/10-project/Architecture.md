@@ -10,7 +10,7 @@ summary: Code layout of the Next.js app, the engine/agent split and the agent's 
 One Next.js 16 app in `web/`. No database: the simulated world lives in JSON in the repo.
 
 ## The key design choice
-**Plain code checks, the LLM explains.** `web/src/lib/engine.ts` computes every connection, arrival time, rupee and layover. Claude only reads those results, ranks trade-offs in words and drafts messages. After Claude finishes, the engine re-ranks and overrides any verdict that contradicts the numbers. Answer to "what if the AI hallucinates?" See [[Decisions]].
+**Plain code checks, the LLM explains.** `web/src/lib/engine.ts` computes every connection, arrival time, rupee and layover. The LLM (Groq) only reads those results, ranks trade-offs in words and drafts messages. After it finishes, the engine re-ranks and overrides any verdict that contradicts the numbers. Answer to "what if the AI hallucinates?" See [[Decisions]].
 
 ## Files
 | Path | What it does |
@@ -18,7 +18,7 @@ One Next.js 16 app in `web/`. No database: the simulated world lives in JSON in 
 | `web/src/data/trip.json` | The traveller's booking chain |
 | `web/src/data/scenarios.json` | 4 disruptions, each with its inventory (`legs`) and candidate `plans` |
 | `web/src/lib/engine.ts` | `findAffected` (walk the chain), `parseConstraints`, `evaluatePlan` / `rankPlans`, `explain`, `draftActions`. No imports, runs in Node too |
-| `web/src/lib/agent.ts` | Claude tool-use agent + offline planner fallback. Streams `AgentEvent`s |
+| `web/src/lib/agent.ts` | Groq tool-use agent (plain `fetch`, OpenAI format) + offline planner fallback. Streams `AgentEvent`s |
 | `web/src/app/api/agent/route.ts` | POST endpoint, streams NDJSON |
 | `web/src/components/DominoChain.tsx` | The chain UI: dominoes tip over in sequence, times flip like a departure board |
 | `web/src/components/demo/*` | Demo console: `useAgent` (stream reader), `Plans`, `Actions`, `DemoConsole` |
@@ -27,9 +27,12 @@ One Next.js 16 app in `web/`. No database: the simulated world lives in JSON in 
 | `web/scripts/check-engine.ts` | Self-check of the demo story: `npm run check` |
 
 ## Agent tools
-`get_bookings`, `find_affected`, `search_alternatives`, `check_constraints` (Claude passes the limits it read from the traveller's words), `build_itinerary`, `draft_messages`, `present_recommendation`.
-Model `claude-opus-5-5`, effort `low` for demo speed, server-side refusal fallback on.
-No `ANTHROPIC_API_KEY`: runs the same steps with the engine's own explanations ("Built-in planner"). Also the fallback if the API fails mid-demo.
+The server runs `get_bookings`, `find_affected` and `search_alternatives` itself and puts the results in the first message (saves free-tier requests). Exactly two requests per run (about 4,000 tokens):
+1. Forced tool call `check_constraints`: the model passes the limits it read from the traveller's words, the engine ranks every plan.
+2. JSON mode: the model writes the summary and one explanation per plan, in the engine's order, recommending the engine's top pick. (A forced `present_recommendation` tool call failed on Groq: gpt-oss formats the nested array loosely and Groq rejects it.)
+The engine logs `build_itinerary` and `draft_messages` itself. Everything the model returns is validated with zod. On a 429 with a wait of 8 s or less, it waits once and retries ("Free tier is busy" step).
+Groq's OpenAI-compatible endpoint, model `GROQ_MODEL` (default `openai/gpt-oss-120b`, free tier 8,000 tokens a minute, so about two runs a minute), temperature 0.2, `reasoning_effort: low`, 30 s timeout per request. Any OpenAI-compatible provider works by changing `GROQ_URL`.
+No `GROQ_API_KEY`: runs the same steps with the engine's own explanations ("Built-in planner"). Also the fallback if the API fails mid-demo.
 
 ## Scoring (engine)
 Hard fails rule a plan out: misses deadline, over budget, overnight bus, idle wait over the layover limit.
@@ -39,8 +42,8 @@ Score = 100 + arrival buffer (max 30) - cost share of budget (x25) - changes (x8
 Motion (`motion/react`) everywhere except stranded mode. `MotionConfig reducedMotion="user"` in `Providers.tsx` respects OS settings. Page transitions in `app/template.tsx`.
 
 ## Deployment
-Live: https://domino-nyx.vercel.app. Vercel project `domino-nyx` on Raahil's account, root directory `web`.
-To redeploy from your machine: `cd web`, then `npx vercel deploy --prod` (needs access to the project).
-No auto-deploy on push yet, see [[Tasks]].
+Auto-deploy: https://nyxdevhack.vercel.app. Vercel project `nyxdevhack` (Nihal's `nova` team), linked to the GitHub repo, root directory `web`. Every push to `main` goes to production; other branches get preview links.
+Manual: https://domino-nyx.vercel.app. Vercel project `domino-nyx` on Raahil's account. Redeploy with `cd web`, then `npx vercel deploy --prod`.
+Env vars: `GROQ_API_KEY` (and optionally `GROQ_MODEL`) in project settings.
 
 Related: [[Domino Overview]], [[Changelog]]

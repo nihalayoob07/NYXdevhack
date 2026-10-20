@@ -9,6 +9,11 @@ summary: Every change to the project, newest first. One entry per commit.
 
 Newest first. Use the [[Changelog entry]] template: date, who, what changed, why, notes touched.
 
+## 2026-10-20: Groq instead of Claude, auto-deploy (Nihal)
+**What:** `agent.ts` now calls Groq's OpenAI-compatible endpoint with `fetch` (key `GROQ_API_KEY`, model `GROQ_MODEL`, default `openai/gpt-oss-120b`). Lookups run server-side and go in the first message; a run is exactly 2 requests (forced `check_constraints` tool call, then a JSON-mode recommendation in the engine's order), about 4,000 tokens, ~2 s. Retries once on a short 429. Prompt rules stop invented facts (a test run claimed a kept hotel was lost). Model output validated with zod. Removed `@anthropic-ai/sdk`. UI labels say "Live AI (Groq)" / "The AI". New Vercel project `nyxdevhack` linked to the repo: pushes to `main` deploy to https://nyxdevhack.vercel.app.
+**Why:** Free API for the shortlist. Gemini was tried first but Google denied the project access (403).
+**Notes touched:** [[Architecture]], [[Decisions]], [[Tasks]], [[Demo Script]]
+
 ## 2026-10-20: Deployed to Vercel (Raahil)
 **What:** Live at https://domino-nyx.vercel.app (Vercel project `domino-nyx`, Raahil's account, root `web/`). Deployed from a local copy with the Vercel CLI because Vercel can't link a repo owned by another GitHub account, so pushes do not auto-deploy yet. Runs the built-in planner until `ANTHROPIC_API_KEY` is added in Vercel.
 **Why:** Judges and teammates need a public link.

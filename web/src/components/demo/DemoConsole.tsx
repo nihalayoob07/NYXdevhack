@@ -205,8 +205,8 @@ export function DemoConsole() {
               aside={
                 agent.mode && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-xs text-muted">
-                    {agent.mode === "claude" ? <Robot size={14} aria-hidden /> : <WifiSlash size={14} aria-hidden />}
-                    {agent.mode === "claude" ? "Claude Opus 5.5" : "Built-in planner (no API key)"}
+                    {agent.mode === "ai" ? <Robot size={14} aria-hidden /> : <WifiSlash size={14} aria-hidden />}
+                    {agent.mode === "ai" ? "Live AI (Groq)" : "Built-in planner (no API key)"}
                   </span>
                 )
               }
@@ -244,7 +244,7 @@ export function DemoConsole() {
                     >
                       Approve plan
                     </button>
-                    <p className="text-xs text-muted">Times, prices and limits are checked by code. Claude only explains the trade-offs.</p>
+                    <p className="text-xs text-muted">Times, prices and limits are checked by code. The AI only explains the trade-offs.</p>
                   </div>
                 </Panel>
               </motion.div>

@@ -114,8 +114,8 @@ export default function Home() {
             <p className="mt-3 leading-relaxed text-muted">Every connection, arrival time, rupee and layover is computed, not generated. A plan that misses your deadline is ruled out before the AI sees it.</p>
           </Reveal>
           <Reveal delay={0.08} className="bg-surface p-6 md:p-8">
-            <p className="font-medium">Claude explains</p>
-            <p className="mt-3 leading-relaxed text-muted">Claude reads those results, ranks the trade-offs in plain words and drafts the messages. If it ever disagrees with the numbers, the numbers win.</p>
+            <p className="font-medium">The AI explains</p>
+            <p className="mt-3 leading-relaxed text-muted">The AI reads those results, ranks the trade-offs in plain words and drafts the messages. If it ever disagrees with the numbers, the numbers win.</p>
           </Reveal>
         </div>
       </section>

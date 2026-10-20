@@ -17,4 +17,4 @@ summary: The 90-second walkthrough for judges.
 8. **Finished actions.** Approve all. Then switch to **Flight cancelled** to show the DGCA compensation claim.
 9. **Stranded mode (10s).** Reply "1". "Works on 8% battery."
 
-Judge question to expect: "What if the AI hallucinates?" Answer: the engine checks every time and rupee; Claude only explains, and the numbers override it. See [[Architecture]].
+Judge question to expect: "What if the AI hallucinates?" Answer: the engine checks every time and rupee; the AI only explains, and the numbers override it. See [[Architecture]].

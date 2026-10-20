@@ -127,7 +127,7 @@ export function findAffected(trip: Trip, s: Scenario | null): ChainNode[] {
   });
 }
 
-// ---------- constraints from plain language (offline parser; Claude does this when online) ----------
+// ---------- constraints from plain language (offline parser; the AI does this when online) ----------
 
 export function parseConstraints(text: string): Constraints {
   const t = text.toLowerCase();

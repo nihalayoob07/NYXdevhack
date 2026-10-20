@@ -10,9 +10,9 @@ summary: Task board. Move items between sections and add your name.
 ## Doing
 
 ## To do
-- [ ] Add `ANTHROPIC_API_KEY` to `web/.env.local` and run the demo with Claude live
-- [ ] Auto-deploy on push: nihalayoob07 installs the Vercel GitHub app on their account, or we move the repo, then link it to `domino-nyx`
-- [ ] Add `ANTHROPIC_API_KEY` in Vercel project settings, then redeploy
+- [ ] Add `GROQ_API_KEY` to `web/.env.local` and run the demo with the live AI
+- [ ] Add `GROQ_API_KEY` in the `nyxdevhack` Vercel project settings, then redeploy
+- [ ] Pick one live link for judges: `nyxdevhack.vercel.app` (auto-deploys) or `domino-nyx.vercel.app` (manual)
 - [ ] Fill in names and areas in [[Team]]
 - [ ] Rehearse the [[Demo Script]] twice, time it
 - [ ] More scenarios: strike notice, weather diversion, denied boarding (DGCA 200%/400% compensation)
@@ -23,3 +23,5 @@ summary: Task board. Move items between sections and add your name.
 - [x] Landing page, demo console, stranded mode with motion (Raahil, 2026-10-20)
 - [x] Vault, changelog hook, README (Raahil, 2026-10-20)
 - [x] Deployed to https://domino-nyx.vercel.app (Raahil, 2026-10-20)
+- [x] Auto-deploy on push: Vercel project `nyxdevhack` linked to the repo, live at https://nyxdevhack.vercel.app (Nihal, 2026-10-20)
+- [x] Agent switched from Claude to Groq free tier (Nihal, 2026-10-20)

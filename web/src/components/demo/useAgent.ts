@@ -5,7 +5,7 @@ import type { Constraints } from "@/lib/engine";
 
 export interface AgentState {
   running: boolean;
-  mode: "claude" | "offline" | null;
+  mode: "ai" | "offline" | null;
   steps: { tool: string; text: string }[];
   constraints: Constraints | null;
   result: Extract<AgentEvent, { type: "result" }> | null;

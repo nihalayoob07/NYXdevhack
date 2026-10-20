@@ -16,7 +16,7 @@ npm run dev
 
 Open http://localhost:3000. Pages: `/` landing, `/demo` live demo with the chaos panel, `/stranded` low-battery chat mode.
 
-To use Claude live, copy `web/.env.example` to `web/.env.local` and set `ANTHROPIC_API_KEY`. Without a key the demo uses the built-in planner, which runs the same steps.
+To use the live AI, copy `web/.env.example` to `web/.env.local` and set `GROQ_API_KEY` (free at console.groq.com). Without a key the demo uses the built-in planner, which runs the same steps.
 
 `npm run check` verifies the engine still produces the demo story.
 
