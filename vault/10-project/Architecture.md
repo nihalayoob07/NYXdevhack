@@ -38,4 +38,9 @@ Score = 100 + arrival buffer (max 30) - cost share of budget (x25) - changes (x8
 ## Motion
 Motion (`motion/react`) everywhere except stranded mode. `MotionConfig reducedMotion="user"` in `Providers.tsx` respects OS settings. Page transitions in `app/template.tsx`.
 
+## Deployment
+Live: https://domino-nyx.vercel.app. Vercel project `domino-nyx` on Raahil's account, root directory `web`.
+To redeploy from your machine: `cd web`, then `npx vercel deploy --prod` (needs access to the project).
+No auto-deploy on push yet, see [[Tasks]].
+
 Related: [[Domino Overview]], [[Changelog]]

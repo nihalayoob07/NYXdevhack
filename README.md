@@ -4,6 +4,8 @@
 
 Domino treats a trip as a chain of linked bookings. When one link breaks, it shows the ripple, sees it coming before the airline announces it, repairs the whole chain within the traveller's own limits, and drafts the refunds, DGCA compensation claim and messages, ready to approve.
 
+**Live:** https://domino-nyx.vercel.app
+
 ## Run it
 
 ```bash

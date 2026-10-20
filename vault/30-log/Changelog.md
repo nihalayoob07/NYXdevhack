@@ -9,6 +9,11 @@ summary: Every change to the project, newest first. One entry per commit.
 
 Newest first. Use the [[Changelog entry]] template: date, who, what changed, why, notes touched.
 
+## 2026-10-20: Deployed to Vercel (Raahil)
+**What:** Live at https://domino-nyx.vercel.app (Vercel project `domino-nyx`, Raahil's account, root `web/`). Deployed from a local copy with the Vercel CLI because Vercel can't link a repo owned by another GitHub account, so pushes do not auto-deploy yet. Runs the built-in planner until `ANTHROPIC_API_KEY` is added in Vercel.
+**Why:** Judges and teammates need a public link.
+**Notes touched:** [[Architecture]], [[Tasks]]
+
 ## 2026-10-20: Initial build (Raahil)
 **What:** Next.js 16 app in `web/` with:
 - Simulated world: `trip.json` (flight → train → hotel → wedding) and `scenarios.json` (inbound delay, flight cancelled, train cancelled, hotel overbooked).
