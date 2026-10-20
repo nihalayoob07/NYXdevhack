@@ -1,0 +1,101 @@
+[
+  {
+    "id": "inbound-delay",
+    "chaos": "Inbound flight delayed 2h",
+    "headline": "Your flight will leave about 2 hours late",
+    "detectedAt": 650,
+    "airlineAnnouncesAt": 691,
+    "effects": [{ "booking": "flight", "delay": 120 }],
+    "signals": [
+      "VT-IZK, the aircraft flying 6E 2417, is still in Bengaluru. Its inbound leg 6E 2416 is 118 min late.",
+      "Delhi weather is clear, with no air traffic flow restrictions.",
+      "No strike or ground-staff notices for DEL or BLR."
+    ],
+    "legs": [
+      { "id": "s1-6e2135", "mode": "flight", "title": "IndiGo 6E 2135", "from": "Delhi DEL", "to": "Bengaluru BLR", "dep": 870, "arr": 1035, "price": 2900, "seatsLeft": 4, "note": "Fare difference and change fee for 2. Leave for the airport by 12:30." },
+      { "id": "s1-cab", "mode": "cab", "title": "Airport cab to Mysuru", "from": "Bengaluru BLR", "to": "Mysuru", "dep": 1250, "arr": 1475, "connectMin": 20, "price": 3900 },
+      { "id": "s1-airport-hotel", "mode": "hotel", "title": "Runway Inn, Devanahalli", "to": "Bengaluru", "connectMin": 20, "price": 3100, "note": "Includes a 04:50 cab to KSR station." },
+      { "id": "s1-morning-train", "mode": "train", "title": "Morning Shatabdi", "from": "KSR Bengaluru", "to": "Mysuru Jn", "dep": 1810, "arr": 1930, "price": 1120 },
+      { "id": "s1-sleeper", "mode": "bus", "title": "Airavat Sleeper", "from": "Bengaluru BLR", "to": "Mysuru", "dep": 1420, "arr": 1640, "connectMin": 30, "price": 1500, "overnight": true },
+      { "id": "s1-del-hyd", "mode": "flight", "title": "Air India AI 542", "from": "Delhi DEL", "to": "Hyderabad HYD", "dep": 750, "arr": 885, "price": 9800 },
+      { "id": "s1-hyd-myq", "mode": "flight", "title": "Alliance Air 9I 516", "from": "Hyderabad HYD", "to": "Mysuru MYQ", "dep": 1160, "arr": 1250, "connectMin": 60, "price": 6000 }
+    ],
+    "plans": [
+      { "id": "s1-earlier", "label": "Switch to the earlier IndiGo flight", "steps": ["s1-6e2135", "train", "hotel"], "refunds": [] },
+      { "id": "s1-cab", "label": "Keep the late flight, cab straight to Mysuru", "steps": ["flight", "s1-cab", "hotel"], "refunds": [{ "booking": "train", "amount": 560, "note": "IRCTC refund for cancelling the train before departure (estimate)" }] },
+      { "id": "s1-overnight", "label": "Sleep near the airport, morning train", "steps": ["flight", "s1-airport-hotel", "s1-morning-train"], "refunds": [{ "booking": "train", "amount": 560, "note": "IRCTC refund for cancelling the train before departure (estimate)" }] },
+      { "id": "s1-bus", "label": "Late flight, then overnight sleeper bus", "steps": ["flight", "s1-sleeper", "hotel"], "refunds": [{ "booking": "train", "amount": 560, "note": "IRCTC refund for cancelling the train before departure (estimate)" }] },
+      { "id": "s1-hyd", "label": "Fly into Mysuru via Hyderabad", "steps": ["s1-del-hyd", "s1-hyd-myq", "hotel"], "refunds": [{ "booking": "flight", "amount": 2200, "note": "IndiGo cancellation refund" }, { "booking": "train", "amount": 560, "note": "IRCTC refund (estimate)" }] }
+    ]
+  },
+  {
+    "id": "flight-cancelled",
+    "chaos": "Flight cancelled",
+    "headline": "IndiGo cancelled your flight",
+    "detectedAt": 810,
+    "claim": "dgca-cancellation",
+    "effects": [{ "booking": "flight", "cancel": true }],
+    "signals": [
+      "IndiGo cancelled 6E 2417, citing crew duty limits.",
+      "The airline's own rebooking offer is 6E 6158 at 18:30, almost 3 hours later.",
+      "About 180 passengers are now looking for the same evening seats."
+    ],
+    "legs": [
+      { "id": "s2-ai2817", "mode": "flight", "title": "Air India AI 2817", "from": "Delhi DEL", "to": "Bengaluru BLR", "dep": 910, "arr": 1075, "price": 12400, "seatsLeft": 6 },
+      { "id": "s2-6e6158", "mode": "flight", "title": "IndiGo 6E 6158", "from": "Delhi DEL", "to": "Bengaluru BLR", "dep": 1110, "arr": 1280, "price": 0, "note": "Free rebooking offered by IndiGo." },
+      { "id": "s2-cab", "mode": "cab", "title": "Airport cab to Mysuru", "from": "Bengaluru BLR", "to": "Mysuru", "dep": 1300, "arr": 1525, "connectMin": 20, "price": 3900 },
+      { "id": "s2-sleeper", "mode": "bus", "title": "Airavat Sleeper", "from": "Bengaluru BLR", "to": "Mysuru", "dep": 1420, "arr": 1640, "connectMin": 30, "price": 1500, "overnight": true }
+    ],
+    "plans": [
+      { "id": "s2-ai", "label": "Air India 15:10, keep the train", "steps": ["s2-ai2817", "train", "hotel"], "refunds": [{ "booking": "flight", "amount": 13680, "note": "Full refund for the cancelled flight" }] },
+      { "id": "s2-rebook-cab", "label": "Take IndiGo's 18:30 rebooking, cab to Mysuru", "steps": ["s2-6e6158", "s2-cab", "hotel"], "refunds": [{ "booking": "train", "amount": 560, "note": "IRCTC refund for cancelling the train (estimate)" }] },
+      { "id": "s2-rebook-bus", "label": "IndiGo's rebooking, then overnight bus", "steps": ["s2-6e6158", "s2-sleeper", "hotel"], "refunds": [{ "booking": "train", "amount": 560, "note": "IRCTC refund (estimate)" }] }
+    ]
+  },
+  {
+    "id": "train-cancelled",
+    "chaos": "Train cancelled",
+    "headline": "Railways cancelled your 20:30 train",
+    "detectedAt": 1020,
+    "effects": [{ "booking": "train", "cancel": true }],
+    "signals": [
+      "South Western Railway cancelled tonight's Mysuru Intercity for track work near Mandya.",
+      "Your flight is on time, landing 18:30.",
+      "Road traffic on the Bengaluru-Mysuru expressway is normal."
+    ],
+    "legs": [
+      { "id": "s3-cab", "mode": "cab", "title": "Airport cab to Mysuru", "from": "Bengaluru BLR", "to": "Mysuru", "dep": 1130, "arr": 1340, "connectMin": 20, "price": 3900 },
+      { "id": "s3-bus", "mode": "bus", "title": "KSRTC Airavat Club Class", "from": "Satellite Bus Stand", "to": "Mysuru", "dep": 1230, "arr": 1425, "connectMin": 90, "price": 1740, "changes": 2, "note": "Includes a ₹900 airport cab to the bus stand." },
+      { "id": "s3-late-train", "mode": "train", "title": "Late passenger train", "from": "KSR Bengaluru", "to": "Mysuru Jn", "dep": 1365, "arr": 1530, "connectMin": 90, "price": 580 },
+      { "id": "s3-sleeper", "mode": "bus", "title": "Airavat Sleeper", "from": "Bengaluru BLR", "to": "Mysuru", "dep": 1420, "arr": 1640, "connectMin": 30, "price": 1500, "overnight": true }
+    ],
+    "plans": [
+      { "id": "s3-cab", "label": "Cab from the airport to Mysuru", "steps": ["flight", "s3-cab", "hotel"], "refunds": [{ "booking": "train", "amount": 770, "note": "Automatic full refund, train cancelled by Railways" }] },
+      { "id": "s3-bus", "label": "Evening Airavat bus from the city", "steps": ["flight", "s3-bus", "hotel"], "refunds": [{ "booking": "train", "amount": 770, "note": "Automatic full refund, train cancelled by Railways" }] },
+      { "id": "s3-late-train", "label": "Wait for the 22:45 train", "steps": ["flight", "s3-late-train", "hotel"], "refunds": [{ "booking": "train", "amount": 770, "note": "Automatic full refund, train cancelled by Railways" }] },
+      { "id": "s3-sleeper", "label": "Overnight sleeper bus", "steps": ["flight", "s3-sleeper", "hotel"], "refunds": [{ "booking": "train", "amount": 770, "note": "Automatic full refund, train cancelled by Railways" }] }
+    ]
+  },
+  {
+    "id": "hotel-overbooked",
+    "chaos": "Hotel overbooked",
+    "headline": "Your Mysuru hotel gave your room away",
+    "detectedAt": 1140,
+    "effects": [{ "booking": "hotel", "cancel": true }],
+    "signals": [
+      "The Chamundi Courtyard emailed at 19:00: overbooked tonight, room released.",
+      "Your flight and train are both on time.",
+      "Wedding season in Mysuru: 3 nearby hotels still show rooms."
+    ],
+    "legs": [
+      { "id": "s4-kaveri", "mode": "hotel", "title": "Kaveri Heritage Stay", "to": "Mysuru", "connectMin": 20, "price": 4800, "distanceKm": 1.2, "note": "24-hour front desk." },
+      { "id": "s4-lalitha", "mode": "hotel", "title": "Lalitha Residency", "to": "Mysuru", "connectMin": 20, "checkInBy": 1410, "price": 3900, "distanceKm": 4.5 },
+      { "id": "s4-hill", "mode": "hotel", "title": "Chamundi Hill View", "to": "Mysuru", "connectMin": 20, "price": 6900, "distanceKm": 0.4, "note": "24-hour front desk." }
+    ],
+    "plans": [
+      { "id": "s4-kaveri", "label": "Kaveri Heritage Stay, 1.2 km from the venue", "steps": ["flight", "train", "s4-kaveri"], "refunds": [{ "booking": "hotel", "amount": 4200, "note": "Full refund from The Chamundi Courtyard (overbooking)" }] },
+      { "id": "s4-lalitha", "label": "Lalitha Residency, cheaper but 4.5 km out", "steps": ["flight", "train", "s4-lalitha"], "refunds": [{ "booking": "hotel", "amount": 4200, "note": "Full refund from The Chamundi Courtyard (overbooking)" }] },
+      { "id": "s4-hill", "label": "Chamundi Hill View, next to the venue", "steps": ["flight", "train", "s4-hill"], "refunds": [{ "booking": "hotel", "amount": 4200, "note": "Full refund from The Chamundi Courtyard (overbooking)" }] }
+    ]
+  }
+]

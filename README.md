@@ -1,0 +1,35 @@
+# Domino
+
+**One delay shouldn't break your whole trip.** An AI agent for travel disruption recovery, by Team NYX for Devhack Sahyadri.
+
+Domino treats a trip as a chain of linked bookings. When one link breaks, it shows the ripple, sees it coming before the airline announces it, repairs the whole chain within the traveller's own limits, and drafts the refunds, DGCA compensation claim and messages, ready to approve.
+
+## Run it
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open http://localhost:3000. Pages: `/` landing, `/demo` live demo with the chaos panel, `/stranded` low-battery chat mode.
+
+To use Claude live, copy `web/.env.example` to `web/.env.local` and set `ANTHROPIC_API_KEY`. Without a key the demo uses the built-in planner, which runs the same steps.
+
+`npm run check` verifies the engine still produces the demo story.
+
+## Layout
+
+```
+web/     Next.js app (engine, agent, UI). Native app can go in mobile/ later.
+vault/   Obsidian vault: project notes, decisions, tasks, changelog
+.githooks/pre-commit   requires a vault changelog entry with every code change
+```
+
+Read `vault/Home.md` first, or open `vault/` as an Obsidian vault.
+
+## Team workflow
+
+1. After cloning, run once: `git config core.hooksPath .githooks`
+2. Every commit that touches `web/` must add an entry to `vault/30-log/Changelog.md`. Update any note that describes what you changed.
+3. Claim tasks in `vault/20-team/Tasks.md`.

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Every code change must come with a vault changelog entry (team rule, see vault/Home.md).
+# Skip once with: SKIP_VAULT=1 git commit ...
+[ -n "$SKIP_VAULT" ] && exit 0
+staged=$(git diff --cached --name-only)
+echo "$staged" | grep -q '^web/' || exit 0
+if ! echo "$staged" | grep -q '^vault/30-log/Changelog.md$'; then
+  echo "pre-commit: you changed web/ but not vault/30-log/Changelog.md."
+  echo "Add a changelog entry (and update any note that describes what you changed), then commit again."
+  exit 1
+fi

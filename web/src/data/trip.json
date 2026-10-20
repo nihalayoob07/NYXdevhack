@@ -1,0 +1,51 @@
+{
+  "traveller": "Ananya Rao",
+  "companion": "her mother, Lakshmi (68)",
+  "date": "Mon 26 Oct 2026",
+  "waitingFor": { "name": "Meera", "relation": "cousin, waiting in Mysuru" },
+  "defaultConstraints": "Must reach Mysuru by 9am Tuesday, max ₹4,000 extra, no overnight buses. Travelling with my mum, who can't do long layovers.",
+  "bookings": [
+    {
+      "id": "flight",
+      "mode": "flight",
+      "title": "IndiGo 6E 2417",
+      "from": "Delhi DEL",
+      "to": "Bengaluru BLR",
+      "dep": 940,
+      "arr": 1110,
+      "price": 13680,
+      "ref": "PNR K7QX2M"
+    },
+    {
+      "id": "train",
+      "mode": "train",
+      "title": "Mysuru Intercity, Chair Car",
+      "from": "KSR Bengaluru",
+      "to": "Mysuru Jn",
+      "dep": 1230,
+      "arr": 1385,
+      "connectMin": 90,
+      "price": 770,
+      "ref": "PNR 4318562907"
+    },
+    {
+      "id": "hotel",
+      "mode": "hotel",
+      "title": "The Chamundi Courtyard",
+      "to": "Mysuru",
+      "checkInBy": 1440,
+      "connectMin": 20,
+      "price": 4200,
+      "distanceKm": 1.5,
+      "ref": "Booking HC-88213"
+    },
+    {
+      "id": "event",
+      "mode": "event",
+      "title": "Kavya's wedding muhurtham",
+      "to": "Sri Lakshmi Kalyana Mantapa, Mysuru",
+      "at": 1980,
+      "connectMin": 30
+    }
+  ]
+}

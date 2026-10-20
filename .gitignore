@@ -1,0 +1,9 @@
+node_modules/
+.env*
+!.env.example
+.DS_Store
+
+# Obsidian: per-person UI state stays local, shared config is committed
+vault/.obsidian/workspace*.json
+vault/.obsidian/cache
+vault/.trash/

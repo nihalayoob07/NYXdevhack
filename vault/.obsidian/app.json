@@ -1,0 +1,8 @@
+{
+  "alwaysUpdateLinks": true,
+  "newLinkFormat": "shortest",
+  "newFileLocation": "folder",
+  "newFileFolderPath": "10-project",
+  "attachmentFolderPath": "90-assets",
+  "showLineNumber": true
+}
