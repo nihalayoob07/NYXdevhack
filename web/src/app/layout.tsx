@@ -1,11 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Geist, Geist_Mono, Inter_Tight, Space_Mono } from "next/font/google";
+import { Fraunces, Inter_Tight, Space_Mono } from "next/font/google";
+import { Nav } from "@/components/Nav";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
-// Ticket stack (the app at /): serif headings, typewriter tickets, Inter Tight body.
+// Ticket stack look: serif headings, typewriter tickets, Inter Tight body.
 const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], weight: ["500", "700"] });
 const spaceMono = Space_Mono({ variable: "--font-space-mono", subsets: ["latin"], weight: ["400", "700"] });
 const interTight = Inter_Tight({ variable: "--font-inter-tight", subsets: ["latin"] });
@@ -21,7 +20,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${spaceMono.variable} ${interTight.variable} antialiased`}>
+    <html lang="en" className={`${fraunces.variable} ${spaceMono.variable} ${interTight.variable} antialiased`}>
       <body className="min-h-[100dvh] flex flex-col">
         <a
           href="#main"
@@ -30,6 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         <Providers>
+          <Nav />
           <main id="main" className="flex-1">
             {children}
           </main>

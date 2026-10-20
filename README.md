@@ -16,7 +16,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. Pages: `/` the app (ticket stack design; tap "Demo: send a disruption" to start), `/stranded` low-battery chat mode. `/demo` redirects to `/`.
+Open http://localhost:3000. Pages: `/` the app (pick a disruption in "Send a disruption" to start), `/stranded` low-battery chat mode. `/demo` redirects to `/`.
 
 To use the live AI, copy `web/.env.example` to `web/.env.local` and set `GROQ_API_KEY` (free at console.groq.com). Without a key the demo uses the built-in planner, which runs the same steps.
 

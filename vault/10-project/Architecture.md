@@ -7,7 +7,7 @@ summary: Code layout of the Next.js app, the engine/agent split and the agent's 
 ---
 # Architecture
 
-One Next.js 16 app in `web/`. Pages: `/` the app (ticket stack), `/stranded` low-battery chat, `/demo` redirects to `/`. No database: the simulated world lives in JSON in the repo.
+One Next.js 16 app in `web/`. Pages: `/` the app (trip, disruptions, agent, options, repaired trip, drafted actions), `/stranded` low-battery chat, `/demo` redirects to `/`. Whole site uses the ticket stack look. No database: the simulated world lives in JSON in the repo.
 
 ## The key design choice
 **Plain code checks, the LLM explains.** `web/src/lib/engine.ts` computes every connection, arrival time, rupee and layover. The LLM (Groq) only reads those results, ranks trade-offs in words and drafts messages. After it finishes, the engine re-ranks and overrides any verdict that contradicts the numbers. Answer to "what if the AI hallucinates?" See [[Decisions]].
@@ -20,7 +20,10 @@ One Next.js 16 app in `web/`. Pages: `/` the app (ticket stack), `/stranded` low
 | `web/src/lib/engine.ts` | `findAffected` (walk the chain), `parseConstraints`, `evaluatePlan` / `rankPlans`, `explain`, `draftActions`. No imports, runs in Node too |
 | `web/src/lib/agent.ts` | Groq tool-use agent (plain `fetch`, OpenAI format) + offline planner fallback. Streams `AgentEvent`s |
 | `web/src/app/api/agent/route.ts` | POST endpoint, streams NDJSON |
-| `web/src/components/app/TripApp.tsx` | **The app at `/`** (ticket stack design). One client component, screens: home → alert → think → options → review → booking → done. Uses the engine directly and `useAgent` for the live run |
+| `web/src/components/app/Console.tsx` | **The app at `/`**: bookings as a ticket stack, "Send a disruption" panel (demo), push-style notification, alert with the airline comparison, live agent log, your limits, options, repaired trip, actions |
+| `web/src/components/app/Plans.tsx` | Ranked recovery options (Best / Backup / Risky) and the ruled-out list |
+| `web/src/components/app/Actions.tsx` | Drafted bookings, refunds, DGCA claim and messages, each to approve or copy |
+| `web/src/components/app/FlipText.tsx` | Split-flap text for times and the airline status |
 | `web/src/components/app/Ticket.tsx` | One booking drawn as a paper ticket with a stub and a rubber stamp (LATE, MISSED, AT RISK, NEW, KEPT) |
 | `web/src/components/app/useAgent.ts` | Reads the agent's NDJSON stream into state |
 | `web/src/components/StrandedChat.tsx` | 1/2/3 chat, CSS-only animation, runs the engine client-side |
@@ -39,7 +42,7 @@ Hard fails rule a plan out: misses deadline, over budget, overnight bus, idle wa
 Score = 100 + arrival buffer (max 30) - cost share of budget (x25) - changes (x8 with a companion, else x5) - late-night arrival with companion (10) - late check-in (8) - new hotel distance (x2) - tight hotel desk (8).
 
 ## Motion
-Motion (`motion/react`) everywhere except stranded mode. Ticket stack: screens slide in from the right with a 1° turn, headings type out, stamps thump in, new tickets print in from the top (CSS in `globals.css` under `.paper`). `MotionConfig reducedMotion="user"` in `Providers.tsx` respects OS settings. Page transitions in `app/template.tsx`.
+Motion (`motion/react`) everywhere except stranded mode. Ticket stack: stamps thump in at an angle, new tickets print in from the top, the selected option tilts slightly, times flip like a departure board. Ticket CSS (`.tk`, `.stamp`, `.tk-print`) is in `globals.css`. `MotionConfig reducedMotion="user"` in `Providers.tsx` respects OS settings. Page transitions in `app/template.tsx`.
 
 ## Deployment
 Auto-deploy: https://nyxdevhack.vercel.app. Vercel project `nyxdevhack` (Nihal's `nova` team), linked to the GitHub repo, root directory `web`. Every push to `main` goes to production; other branches get preview links.

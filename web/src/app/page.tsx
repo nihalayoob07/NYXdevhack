@@ -1,5 +1,5 @@
-import { TripApp } from "@/components/app/TripApp";
+import { Console } from "@/components/app/Console";
 
 export default function Home() {
-  return <TripApp />;
+  return <Console />;
 }

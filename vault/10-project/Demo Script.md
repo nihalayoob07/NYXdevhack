@@ -7,16 +7,15 @@ summary: The 90-second walkthrough for judges.
 ---
 # Demo Script (about 90 seconds)
 
-Open https://nyxdevhack.vercel.app. It is the app itself, Ananya's phone.
+Open https://nyxdevhack.vercel.app. It is the product itself: Ananya's trip.
 
-1. **Home (10s).** "Your trip to Mysuru": four tickets, flight → train → hotel → wedding. "Domino watches every booking. Each one depends on the one before."
-2. **Send a disruption.** Tap "Demo: send a disruption" → **Inbound flight delayed 2h**. A push notification drops in. Wait for it or tap it.
-3. **Alert.** "Detected 10:50, 41 min before IndiGo." The flight gets a +2H LATE stamp, the train MISSED, hotel and muhurtham AT RISK. "The aircraft is still in Bengaluru. The airline app still says on time."
-4. **Limits.** Point at the chips: by Tue 09:00, max ₹4,000, no overnight buses, short waits for mum. Tap "Edit limits" to show they're typed in plain words.
-5. **Fix my trip.** The agent's steps tick in. "Code checks every time and rupee. The AI only explains."
-6. **Options.** Best is the earlier IndiGo flight. Read the cab option's trade-off. "2 more ruled out by your limits": the overnight bus and the Hyderabad route.
-7. **Review.** NEW and KEPT stamps. Open the drafted message to Meera. Approve and book: actions tick off, then "You're back on track" with the new tickets printing in.
-8. **Start again → Flight cancelled.** Review screen shows the DGCA compensation claim and "You get back ₹1,280".
-9. **Stranded mode (10s).** From the demo menu: "Low battery? Stranded mode". Reply "1". "Works on 8% battery."
+1. **Your bookings (10s).** Four tickets: flight → train → hotel → wedding. "Domino watches every booking. Each one depends on the one before."
+2. **Send a disruption → Inbound flight delayed 2h.** A notification drops in. The flight gets a +2H LATE stamp, the train MISSED, hotel and muhurtham AT RISK.
+3. **Alert.** "Detected 10:50, 41 min before IndiGo. The aircraft is still in Bengaluru." The IndiGo app still says ON TIME; wait for it to flip to DELAYED 2H: "Domino warned you 41 minutes earlier."
+4. **Agent log.** Each step streams in. Point at the limits it read from plain words (right panel): deadline, budget, no overnight buses, comfort for mum.
+5. **Here's how to fix it.** A is Best. Read B's trade-off. Open "ruled out" to show the overnight bus and the Hyderabad route rejected by code.
+6. **Approve and book.** "You're back on track": new tickets print in with NEW / KEPT stamps, plus arrival, cost and spare time.
+7. **Ready to send.** Approve all. Then Reset → **Flight cancelled** to show the DGCA compensation claim and the money back.
+8. **Stranded mode (10s).** Reply "1". "Works on 8% battery."
 
 Judge question to expect: "What if the AI hallucinates?" Answer: the engine checks every time and rupee; the AI only explains, and the numbers override it. See [[Architecture]].

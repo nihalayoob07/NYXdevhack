@@ -9,6 +9,11 @@ summary: Every change to the project, newest first. One entry per commit.
 
 Newest first. Use the [[Changelog entry]] template: date, who, what changed, why, notes touched.
 
+## 2026-10-20: Full product back at /, in the ticket stack look (Nihal)
+**What:** The previous commit shipped only the preview's phone flow. Replaced it with the full product: the former demo console (`components/app/Console.tsx`, `Plans.tsx`, `Actions.tsx`, `FlipText.tsx`) restyled in the ticket stack look. Bookings show as a ticket stack with stamps, disruptions arrive as a notification, all original features kept (airline comparison, agent log, limits, options, ruled out, repaired trip, actions). Paper palette and fonts are now global, so stranded mode matches. Nav is back on every page. Removed `TripApp.tsx` and Geist fonts.
+**Why:** The goal was the AI product in the new theme, not the preview copied.
+**Notes touched:** [[Handoff]], [[Architecture]], [[Decisions]], [[Demo Script]], [[Tasks]]
+
 ## 2026-10-20: Ticket stack app replaces the landing page (Nihal)
 **What:** `/` is now the product: a phone-sized app in the ticket stack look (`components/app/TripApp.tsx`, `Ticket.tsx`). Flow: home → push notification → alert with stamped tickets → editable limits → Fix my trip (live agent) → ranked options → review with drafted actions → booking → repaired trip. Real engine and agent data, all 4 scenarios via "Demo: send a disruption". Removed the landing page, `DominoChain`, the demo console and its `Plans`/`Actions`; `/demo` redirects to `/`. Nav only shows on stranded mode. New fonts Fraunces, Space Mono, Inter Tight. Preview saved in `vault/10-project/design/`.
 **Why:** The site should be the solution as its own product, not an explainer. MVP: essentials only.

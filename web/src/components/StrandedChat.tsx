@@ -71,10 +71,10 @@ export function StrandedChat({ s }: { s: Scenario }) {
   const quick = stage === "choose" ? options.map((_, i) => String(i + 1)) : stage === "confirm" ? ["S", "V"] : [];
 
   return (
-    <div className="flex h-[min(720px,calc(100dvh-10rem))] flex-col overflow-hidden rounded-3xl border border-line bg-surface">
+    <div className="flex h-[min(720px,calc(100dvh-10rem))] flex-col overflow-hidden rounded-[22px] bg-surface shadow-[0_2px_0_var(--edge),0_30px_50px_-40px_rgb(60_40_20/0.55)]">
       <div className="flex items-center justify-between border-b border-line px-4 py-3">
         <div>
-          <p className="font-medium leading-tight">Domino</p>
+          <p className="serif font-bold leading-tight">Domino</p>
           <p className="text-xs text-muted">Travel assistant, replies in seconds</p>
         </div>
         <p className="rounded-full border border-bad/50 px-2 py-0.5 font-mono text-xs text-bad" aria-label="Phone battery 8 percent">

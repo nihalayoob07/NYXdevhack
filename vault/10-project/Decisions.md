@@ -10,7 +10,7 @@ summary: Lightweight decision log. Add new decisions at the top.
 Format: date, decision, why, who.
 
 ### 2026-10-20: The site is the product: ticket stack app
-`/` is now Domino itself, a phone-sized app in the "ticket stack" look (paper, Fraunces + Space Mono, bookings as tickets with stamps), not a landing page explaining it. Built from the preview in `10-project/design/ticket-stack-preview.html`. The "frozen glass" preview was dropped. The old landing page and demo console were removed; a small "Demo: send a disruption" button on the home screen replaces the chaos panel. MVP: only the essential flow. Why: judges should use the product, not read about it. (Nihal)
+`/` is now Domino itself, the full product (the former demo console with every feature) restyled in the "ticket stack" look from `10-project/design/ticket-stack-preview.html`: paper palette, Fraunces headings, Space Mono tickets, bookings as tickets with rubber stamps. The landing page that explained the product was removed. The "frozen glass" preview was dropped. Light only. Why: judges should use the product, not read about it. (Nihal)
 
 ### 2026-10-20: Groq free tier instead of Claude
 The agent calls Groq through its OpenAI-compatible endpoint with plain `fetch` (no SDK). Model from `GROQ_MODEL`, default `openai/gpt-oss-120b`. Tried Gemini first: Google returned 403 "project denied access" on every model. The read-only lookups (bookings, affected chain, candidates) are sent up front instead of as tools, so a run needs about 2 requests instead of 8: free tiers cap requests per minute. Why: a paid key is overkill for the shortlist. (Nihal)

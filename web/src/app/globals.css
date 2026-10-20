@@ -1,38 +1,31 @@
 @import "tailwindcss";
 
-/* Departure-board palette. One accent (signage yellow); late/bad/good are status colours only. */
+/* Ticket stack palette: printed paper tickets, ink, rubber-stamp green and red. Light only on purpose.
+   late/bad/good are status colours only. */
 :root {
-  --bg: #f4f5f6;
-  --surface: #fcfcfd;
-  --surface-2: #eceef0;
-  --line: #dadde2;
-  --text: #121417;
-  --muted: #565c66;
-  --accent: #f2c230;
-  --accent-ink: #7a5c00;
-  --on-accent: #17140a;
-  --late: #c95a14;
-  --bad: #d23c3c;
-  --good: #1b8a4b;
-  color-scheme: light;
-}
+  --paper: #d8cfbd;
+  --sheet: #f3eee3;
+  --card: #fffaf0;
+  --ink: #2b2620;
+  --edge: #ddd3c0;
+  --faded: #9b8b6c;
+  --go: #2f7a4a;
+  --stop: #c2402a;
+  --warn: #b0661a;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0c0e;
-    --surface: #131518;
-    --surface-2: #1b1e22;
-    --line: #2a2e35;
-    --text: #ecedee;
-    --muted: #9aa0aa;
-    --accent: #f5c838;
-    --accent-ink: #f5c838;
-    --on-accent: #17140a;
-    --late: #f08a4b;
-    --bad: #f0605d;
-    --good: #45c27a;
-    color-scheme: dark;
-  }
+  --bg: var(--sheet);
+  --surface: var(--card);
+  --surface-2: #e8e0cf;
+  --line: var(--edge);
+  --text: var(--ink);
+  --muted: #6b604d;
+  --accent: var(--ink);
+  --accent-ink: var(--go);
+  --on-accent: var(--card);
+  --late: var(--warn);
+  --bad: var(--stop);
+  --good: var(--go);
+  color-scheme: light;
 }
 
 @theme inline {
@@ -48,14 +41,27 @@
   --color-late: var(--late);
   --color-bad: var(--bad);
   --color-good: var(--good);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter-tight);
+  --font-mono: var(--font-space-mono);
+  --font-serif: var(--font-fraunces);
 }
 
 body {
-  background: var(--bg);
+  background: var(--paper)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.75' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
   color: var(--text);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-inter-tight), system-ui, sans-serif;
+}
+
+/* Headings in the serif, like a printed timetable. */
+h1,
+h2,
+.serif {
+  font-family: var(--font-fraunces), Georgia, serif;
+  letter-spacing: -0.02em;
+}
+.typed {
+  font-family: var(--font-space-mono), monospace;
 }
 
 ::selection {
@@ -98,31 +104,7 @@ button {
   touch-action: manipulation;
 }
 
-/* ---------- Ticket stack: the app at / ---------- */
-/* Paper palette, light only on purpose (printed tickets). Scoped so stranded mode keeps the board palette. */
-.paper {
-  --paper: #d8cfbd;
-  --sheet: #f3eee3;
-  --card: #fffaf0;
-  --ink: #2b2620;
-  --edge: #ddd3c0;
-  --faded: #9b8b6c;
-  --go: #2f7a4a;
-  --stop: #c2402a;
-  --warn: #b0661a;
-  color-scheme: light;
-  color: var(--ink);
-  background: var(--paper)
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.75' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
-  font-family: var(--font-inter-tight), system-ui, sans-serif;
-}
-.paper .serif {
-  font-family: var(--font-fraunces), Georgia, serif;
-}
-.paper .typed {
-  font-family: var(--font-space-mono), monospace;
-}
-
+/* ---------- Tickets ---------- */
 /* A ticket: punched notches above the stub, perforated stub edge. */
 .tk {
   position: relative;
