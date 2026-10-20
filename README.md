@@ -1,8 +1,8 @@
-# Domino
+# Travv
 
 **One delay shouldn't break your whole trip.** An AI agent for travel disruption recovery, by Team NYX for Devhack Sahyadri.
 
-Domino treats a trip as a chain of linked bookings. When one link breaks, it shows the ripple, sees it coming before the airline announces it, repairs the whole chain within the traveller's own limits, and drafts the refunds, DGCA compensation claim and messages, ready to approve.
+Travv treats a trip as a chain of linked bookings. When one link breaks, it shows the ripple, sees it coming before the airline announces it, repairs the whole chain within the traveller's own limits, and drafts the refunds, DGCA compensation claim and messages, ready to approve.
 
 **Live:** https://nyxdevhack.vercel.app (auto-deploys from `main`)
 

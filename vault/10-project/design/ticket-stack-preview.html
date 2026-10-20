@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Domino preview</title>
+<title>Travv preview</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
@@ -230,7 +230,7 @@ function chain(kind) {
 
 const SCREENS = {
   home: () => `
-    <div class="topbar"><div class="logo"><span class="mark"><span></span><span></span></span>Domino</div><div class="avatar">AR</div></div>
+    <div class="topbar"><div class="logo"><span class="mark"><span></span><span></span></span>Travv</div><div class="avatar">AR</div></div>
     <div class="eyebrow">Mon 26 Oct · with Lakshmi</div>
     <h1 data-scr="Your trip to Mysuru">Your trip to Mysuru</h1>
     <p class="sub">Kavya's wedding, Tuesday 09:00</p>
@@ -275,7 +275,7 @@ const SCREENS = {
     <div class="eyebrow">Your new trip</div>
     <h1 data-scr="${p.label}">${p.label}</h1>
     <div class="legs">${p.review.map(([id, tag, alt]) => { const l = LEGS[id]; return `<div class="leg"><i class="ti ${l.icon}"></i><div class="t"><b>${l.title}</b><span>${alt || l.a}</span></div><span class="tag ${tag === "KEPT" ? "kept" : ""}">${tag}</span></div>`; }).join("")}</div>
-    <div class="eyebrow" style="margin-bottom:8px">Domino will</div>
+    <div class="eyebrow" style="margin-bottom:8px">Travv will</div>
     <div class="actions">${p.actions.map(([ic, t]) => `<div><i class="ti ${ic}"></i>${t}</div>`).join("")}</div>
     <div class="grow"></div>
     <div class="total"><span>Extra for 2 people</span><b>${p.extra}</b></div>
@@ -288,7 +288,7 @@ const SCREENS = {
     <div class="steps" style="justify-items:center">${PLANS.find(x => x.id === sel).actions.map(([ic, t]) => `<div><i class="ti ${ic}"></i>${t.replace(/^(Book|Cancel|Tell)/, m => ({ Book: "Booked:", Cancel: "Cancelled:", Tell: "Told:" })[m])}</div>`).join("")}</div>
     <div class="grow"></div>`,
   done: () => { const p = PLANS.find(x => x.id === sel); return `
-    <div class="topbar"><div class="logo"><span class="mark"><span></span><span></span></span>Domino</div><div class="avatar">AR</div></div>
+    <div class="topbar"><div class="logo"><span class="mark"><span></span><span></span></span>Travv</div><div class="avatar">AR</div></div>
     <div class="eyebrow">Fixed at 10:53</div>
     <h1 data-scr="You're back on track">You're back on track</h1>
     <p class="sub">You'll reach Mysuru ${p.arrive} with ${p.spare} to spare.</p>
@@ -321,7 +321,7 @@ function go(next) {
   if (next === "booking") later(500 + steps.length * 650 + 400, () => go("done"));
 }
 function showNotif() {
-  notif.innerHTML = `<div class="ic"><i class="ti ti-alert-triangle"></i></div><div><b>Domino <span>now</span></b><p>Your flight will leave about 2h late. You'd miss your train. Tap to fix it.</p></div>`;
+  notif.innerHTML = `<div class="ic"><i class="ti ti-alert-triangle"></i></div><div><b>Travv <span>now</span></b><p>Your flight will leave about 2h late. You'd miss your train. Tap to fix it.</p></div>`;
   notif.classList.add("show");
   later(3800, () => go("alert"));
 }

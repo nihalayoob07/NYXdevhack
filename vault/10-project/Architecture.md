@@ -40,7 +40,7 @@ One Next.js 16 app in `web/`. Pages: `/` the product (your own trip, saved on th
 Every time is minutes from 00:00 on the Monday of the trip's week (`trip.week`), so `fmt` always shows the right weekday. `parseConstraints(text, tripStart)` puts "by 9am Tuesday" on the first Tuesday of the trip.
 
 ## Real trips: no fake inventory
-Live airline/train inventory needs paid APIs, so Domino never invents options. It works out the gap ("KSR Bengaluru → Mysuru, after 23:00, before Tue 08:30"), gives prefilled searches (Google Flights, IRCTC, Google Maps drive time, Uber, redBus, Booking.com), and the traveller enters what they found. The engine checks each one against the chain and their limits; the AI compares them on request.
+Live airline/train inventory needs paid APIs, so Travv never invents options. It works out the gap ("KSR Bengaluru → Mysuru, after 23:00, before Tue 08:30"), gives prefilled searches (Google Flights, IRCTC, Google Maps drive time, Uber, redBus, Booking.com), and the traveller enters what they found. The engine checks each one against the chain and their limits; the AI compares them on request.
 
 ## Agent tools
 The server runs `get_bookings`, `find_affected` and `search_alternatives` itself and puts the results in the first message (saves free-tier requests). Exactly two requests per run (about 4,000 tokens):
@@ -62,4 +62,4 @@ Auto-deploy: https://nyxdevhack.vercel.app. Vercel project `nyxdevhack` (Nihal's
 Manual: https://domino-nyx.vercel.app. Vercel project `domino-nyx` on Raahil's account. Redeploy with `cd web`, then `npx vercel deploy --prod`.
 Env vars: `GROQ_API_KEY` (and optionally `GROQ_MODEL`) in project settings.
 
-Related: [[Domino Overview]], [[Changelog]]
+Related: [[Travv Overview]], [[Changelog]]

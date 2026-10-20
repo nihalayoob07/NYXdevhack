@@ -17,7 +17,7 @@ export function Nav() {
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-8" aria-label="Main">
         <Link href="/" className="serif flex items-center gap-2 text-xl font-bold">
           <Logo />
-          Domino
+          Travv
         </Link>
         <div className="flex items-center gap-1 text-sm">
           <Link href="/" className="rounded-full px-3 py-2 font-semibold text-muted transition-colors hover:text-text">

@@ -74,7 +74,7 @@ export function StrandedChat({ s }: { s: Scenario }) {
     <div className="flex h-[min(720px,calc(100dvh-10rem))] flex-col overflow-hidden rounded-[22px] bg-surface shadow-[0_2px_0_var(--edge),0_30px_50px_-40px_rgb(60_40_20/0.55)]">
       <div className="flex items-center justify-between border-b border-line px-4 py-3">
         <div>
-          <p className="serif font-bold leading-tight">Domino</p>
+          <p className="serif font-bold leading-tight">Travv</p>
           <p className="text-xs text-muted">Travel assistant, replies in seconds</p>
         </div>
         <p className="rounded-full border border-bad/50 px-2 py-0.5 font-mono text-xs text-bad" aria-label="Phone battery 8 percent">
@@ -92,7 +92,7 @@ export function StrandedChat({ s }: { s: Scenario }) {
           </div>
         ))}
         {typing && (
-          <div className="bubble-in flex" aria-label="Domino is typing">
+          <div className="bubble-in flex" aria-label="Travv is typing">
             <p className="rounded-2xl rounded-bl-md bg-surface-2 px-3.5 py-2.5 text-sm text-muted">typing…</p>
           </div>
         )}

@@ -10,7 +10,7 @@ const spaceMono = Space_Mono({ variable: "--font-space-mono", subsets: ["latin"]
 const interTight = Inter_Tight({ variable: "--font-inter-tight", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Domino: travel disruption recovery",
+  title: "Travv: travel disruption recovery",
   description: "One delay shouldn't break your whole trip. An AI agent that detects disruptions early and repairs every linked booking.",
 };
 

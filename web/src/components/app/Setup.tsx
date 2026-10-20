@@ -139,7 +139,7 @@ export function Setup({ editing, onDone }: { editing?: Trip; onDone?: () => void
       <Eyebrow>{editing ? "Edit trip" : "New trip"}</Eyebrow>
       <h1 className="mt-1.5 text-4xl font-bold leading-[1.05] md:text-5xl">{editing ? "Your bookings" : "Where are you headed?"}</h1>
       <p className="mt-3 max-w-[52ch] text-muted">
-        {editing ? "Fix anything that changed. Domino checks the whole chain again." : "Paste your booking confirmations. Domino reads them into one chain, watches every link, and repairs the trip when one breaks."}
+        {editing ? "Fix anything that changed. Travv checks the whole chain again." : "Paste your booking confirmations. Travv reads them into one chain, watches every link, and repairs the trip when one breaks."}
       </p>
 
       <div className="mt-8 space-y-6">

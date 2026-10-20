@@ -80,7 +80,7 @@ async function runOffline(trip: Trip, s: Scenario, text: string, emit: Emit, fas
   });
 }
 
-const SYSTEM = `You are Domino, an agent that repairs a traveller's whole trip after a disruption.
+const SYSTEM = `You are Travv, an agent that repairs a traveller's whole trip after a disruption.
 The trip is a chain of linked bookings; one broken link can break the ones after it.
 
 The bookings, the broken links and the candidate plan ids are in the first message. Call check_constraints

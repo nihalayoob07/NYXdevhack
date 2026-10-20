@@ -87,7 +87,7 @@ export function Console({ saved }: { saved: Saved }) {
   useEffect(() => {
     if (adding) addRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [adding]);
-  // Example trip only: the "airline" announces 8s after Domino's alert.
+  // Example trip only: the "airline" announces 8s after Travv's alert.
   useEffect(() => {
     if (!s?.airlineAnnouncesAt) return;
     const t = setTimeout(() => setAirlineSaid(true), 8000);
@@ -206,7 +206,7 @@ export function Console({ saved }: { saved: Saved }) {
             </span>
             <span>
               <b className="flex justify-between text-sm">
-                Domino <span className="text-xs font-normal text-muted">now</span>
+                Travv <span className="text-xs font-normal text-muted">now</span>
               </b>
               <span className="mt-0.5 block text-[13px]">{s.headline}. I&apos;m already working on a fix.</span>
             </span>
@@ -261,7 +261,7 @@ export function Console({ saved }: { saved: Saved }) {
                 return <Ticket key={`${s?.id}-${n.leg.id}`} leg={n.leg} look={look} stamp={st} i={i} />;
               })}
             </ol>
-            {!s && <p className="mt-4 text-sm text-muted">Something changed? Tell Domino in the panel on the right and it checks every booking that depends on it.</p>}
+            {!s && <p className="mt-4 text-sm text-muted">Something changed? Tell Travv in the panel on the right and it checks every booking that depends on it.</p>}
           </Panel>
 
           <AnimatePresence>
@@ -313,7 +313,7 @@ export function Console({ saved }: { saved: Saved }) {
                       <AnimatePresence>
                         {airlineSaid && (
                           <motion.p initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="font-semibold">
-                            Domino warned you {s.airlineAnnouncesAt - s.detectedAt} min earlier.
+                            Travv warned you {s.airlineAnnouncesAt - s.detectedAt} min earlier.
                           </motion.p>
                         )}
                       </AnimatePresence>
@@ -342,7 +342,7 @@ export function Console({ saved }: { saved: Saved }) {
                   <dd className="typed font-bold">{need.leg.mode === "hotel" ? "tonight" : need.by !== null ? `${dateLabel(need.by, week).slice(0, 10)} ${clock(need.by)}` : "as soon as you can"}</dd>
                 </div>
               </dl>
-              <p className="mt-4 text-sm text-muted">Search these, then tell Domino what you found. It checks every option against the rest of your trip and your limits.</p>
+              <p className="mt-4 text-sm text-muted">Search these, then tell Travv what you found. It checks every option against the rest of your trip and your limits.</p>
               <ul className="mt-3 grid gap-2">
                 {strategies(trip, need).map((st) => {
                   const Ico = ICON[st.mode];
@@ -496,7 +496,7 @@ export function Console({ saved }: { saved: Saved }) {
                   </dl>
                   <div className="mt-5 flex flex-wrap items-center gap-3">
                     <Button onClick={saveRepaired}>Save as my trip</Button>
-                    <span className="text-xs text-muted">Replaces your bookings with this chain, so Domino keeps watching the new one.</span>
+                    <span className="text-xs text-muted">Replaces your bookings with this chain, so Travv keeps watching the new one.</span>
                   </div>
                 </Panel>
                 <Panel title="Ready to send">

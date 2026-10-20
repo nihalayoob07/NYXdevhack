@@ -4,7 +4,7 @@ import Link from "next/link";
 import { StrandedChat } from "@/components/StrandedChat";
 import { getScenario, scenarios } from "@/lib/world";
 
-export const metadata: Metadata = { title: "Stranded mode | Domino" };
+export const metadata: Metadata = { title: "Stranded mode | Travv" };
 
 // The scenario comes from ?s=, which is request data, so it streams in under Suspense.
 async function Body({ searchParams }: { searchParams: PageProps<"/stranded">["searchParams"] }) {

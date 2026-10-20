@@ -9,6 +9,11 @@ summary: Every change to the project, newest first. One entry per commit.
 
 Newest first. Use the [[Changelog entry]] template: date, who, what changed, why, notes touched.
 
+## 2026-10-20: Renamed the product to Travv (Raahil)
+**What:** Every user-facing "Domino" is now "Travv": nav, page titles, product copy, console, setup, stranded mode, the agent prompt, README, vault and the ticket-stack preview. The overview note is now [[Travv Overview]]. Kept on purpose: the `DominoChain` component name, the `domino.trip.v1` storage key (renaming it would wipe trips people already saved) and the `domino-nyx` Vercel URLs.
+**Why:** New product name.
+**Notes touched:** [[Home]], [[Travv Overview]], [[Architecture]], [[Demo Script]], [[Decisions]]
+
 ## 2026-10-20: Real product MVP: your own trip (Nihal)
 **What:** `/` now works for any traveller. New trip: paste confirmations (`/api/parse`, Groq) or add by hand, check every field, set limits; saved in `localStorage`. Something went wrong: pick a booking, delayed or cancelled; the engine shows what breaks. Find a way through: the gap to fill, prefilled real searches, "I found one" form; the engine checks each option, "Compare with AI" explains, approve, "Save as my trip". Drafts send via WhatsApp / email. Engine generalised: any weekday (`trip.week`), any airline, optional companion/hotel/waiting-for, passenger count; `verdictOf` moved to the engine. Agent and `/api/agent` take `{ trip, scenario }`. New: `recover.ts`, `store.ts`, `schema.ts`, `App`, `Setup`, `ui`, `Avatar`. Example trip kept behind "Try an example trip".
 **Why:** An MVP should be the product a real traveller can use, not a demo.
@@ -41,5 +46,5 @@ Newest first. Use the [[Changelog entry]] template: date, who, what changed, why
 - `agent.ts` + `/api/agent`: Claude Opus 5.5 tool-use agent streaming each step, with an offline planner fallback.
 - Pages: landing (`/`), demo console (`/demo`), stranded mode (`/stranded`). Motion: domino tipping, split-flap times, page transitions, scroll-linked text.
 - This vault and the pre-commit hook that requires a changelog entry.
-**Why:** Hackathon MVP, see [[Domino Overview]].
+**Why:** Hackathon MVP, see [[Travv Overview]].
 **Notes touched:** [[Home]], [[Architecture]], [[Decisions]], [[Demo Script]], [[Team]], [[Tasks]]

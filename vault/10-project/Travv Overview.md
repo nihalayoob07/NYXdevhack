@@ -3,9 +3,9 @@ type: note
 tags: [project, pitch]
 created: 2026-10-20
 updated: 2026-10-20
-summary: Problem statement, the Domino idea and what the MVP covers.
+summary: Problem statement, the Travv idea and what the MVP covers.
 ---
-# Domino Overview
+# Travv Overview
 
 ## Problem statement
 AI agent for travel disruption recovery. Flight, train and hotel delays or cancellations leave travellers without a clear way to manage affected bookings. Build an agent that detects disruptions, identifies affected bookings, evaluates alternatives and generates a recovery itinerary within the traveller's constraints.

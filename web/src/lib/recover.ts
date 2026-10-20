@@ -1,4 +1,4 @@
-// Recovery for a real trip: the traveller reports what went wrong, Domino works out what they need,
+// Recovery for a real trip: the traveller reports what went wrong, Travv works out what they need,
 // points them at real searches, and the engine checks whatever they find. No made-up inventory.
 import { clock, findAffected, fmt, passengers, type Leg, type Mode, type Plan, type Scenario, type Trip } from "./engine";
 
