@@ -10,7 +10,7 @@ summary: Every change to the project, newest first. One entry per commit.
 Newest first. Use the [[Changelog entry]] template: date, who, what changed, why, notes touched.
 
 ## 2026-10-20: Renamed the product to Travv (Raahil)
-**What:** Every user-facing "Domino" is now "Travv": nav, page titles, product copy, console, setup, stranded mode, the agent prompt, README, vault and the ticket-stack preview. The overview note is now [[Travv Overview]]. Kept on purpose: the `DominoChain` component name, the `domino.trip.v1` storage key (renaming it would wipe trips people already saved) and the `domino-nyx` Vercel URLs.
+**What:** Every user-facing "Domino" is now "Travv": nav, page titles, product copy, console, setup, stranded mode, the agent prompt, README, vault and the ticket-stack preview. The overview note is now [[Travv Overview]]. Kept on purpose: the `DominoChain` component name, the `domino.trip.v1` storage key (renaming it would wipe trips people already saved) and the `domino-nyx` Vercel URLs. A follow-up commit restores `web/package-lock.json`, which a local Windows `npm install` had pruned by accident.
 **Why:** New product name.
 **Notes touched:** [[Home]], [[Travv Overview]], [[Architecture]], [[Demo Script]], [[Decisions]]
 
