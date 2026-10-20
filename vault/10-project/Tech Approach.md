@@ -7,7 +7,7 @@ summary: The technical approach in slide-ready form, for the shortlist PPT.
 ---
 # Tech Approach (for the PPT)
 
-**One line:** a trip is a chain of linked bookings. Domino models that chain, finds every booking one disruption breaks, and repairs it with options that a deterministic engine checks. The AI reads and explains, but never decides.
+**One line:** a trip is a chain of linked bookings. Travv models that chain, finds every booking one disruption breaks, and repairs it with options that a deterministic engine checks. The AI reads and explains, but never decides.
 
 ## 1. Trip as a dependency chain
 - Each booking (flight, train, bus, cab, hotel, event) is a node with times, a place and the connection buffer it needs from the one before.
@@ -28,7 +28,7 @@ summary: The technical approach in slide-ready form, for the shortlist PPT.
 - The engine computes the gap: "KSR Bengaluru → Mysuru, leave after 23:00, arrive by Tue 08:30".
 - Prefilled real searches: Google Flights, IRCTC, Google Maps drive time, Uber, redBus, Booking.com.
 - Each option the traveller finds goes back into the engine, which checks it against the whole chain and their limits. Options are ranked, the ones that fail are ruled out with a reason, and the AI compares them.
-- Approve → the repaired chain becomes the new trip that Domino watches.
+- Approve → the repaired chain becomes the new trip that Travv watches.
 
 ## 4. Built for bad moments
 - **Stranded mode:** a 1/2/3 text chat with CSS-only animation, so it works on 8% battery and airport Wi-Fi.
@@ -41,4 +41,4 @@ Next.js 16 (React 19, TypeScript) on Vercel · Groq API (OpenAI-compatible) · z
 ## 6. Roadmap after the shortlist
 Live flight-status API for automatic early warning (aircraft inbound-delay tracking), airline/IRCTC partner APIs for one-tap rebooking, mobile app with push notifications, and email forwarding to add trips.
 
-Related: [[Architecture]], [[Decisions]], [[Domino Overview]]
+Related: [[Architecture]], [[Decisions]], [[Travv Overview]]
