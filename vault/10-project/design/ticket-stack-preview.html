@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Domino preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body { font: 15px/1.45 "Inter Tight", system-ui, sans-serif; overflow: hidden; transition: background 1s; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.mono { font-family: "JetBrains Mono", monospace; }
+
+/* ---------- shell ---------- */
+.switch { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 50; display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(0,0,0,.55); backdrop-filter: blur(12px); }
+.switch button { white-space: nowrap; padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; color: #ddd; }
+.switch button.on { background: #fff; color: #111; }
+.ambient { position: fixed; inset: 0; z-index: -1; overflow: hidden; }
+.frame { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 410px; height: min(860px, calc(100vh - 92px)); margin-top: 26px; border-radius: 40px; overflow: hidden; isolation: isolate; }
+@media (max-width: 520px) { .frame { width: 100%; height: calc(100% - 64px); top: auto; bottom: 0; transform: translateX(-50%); border-radius: 26px 26px 0 0; margin: 0; } }
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 22px 22px 24px; overflow-y: auto; scrollbar-width: none; }
+.screen::-webkit-scrollbar { display: none; }
+.grow { flex: 1; }
+.cta { width: 100%; padding: 16px; border-radius: 18px; font-weight: 700; font-size: 16px; display: flex; justify-content: center; align-items: center; gap: 8px; transition: transform .15s; }
+.cta:active { transform: scale(.98); }
+.ghost { width: 100%; padding: 12px; font-size: 14px; font-weight: 600; opacity: .7; }
+.topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.logo { display: flex; align-items: center; gap: 8px; font-weight: 800; letter-spacing: -.02em; font-size: 18px; }
+.mark { position: relative; width: 22px; height: 20px; } .mark span { position: absolute; bottom: 0; width: 8px; height: 18px; border-radius: 2px; background: currentColor; } .mark span:first-child { left: 2px; transform: rotate(-18deg); transform-origin: bottom left; opacity: .45; } .mark span:last-child { right: 3px; }
+.avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+.back { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; opacity: .75; }
+.eyebrow { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; opacity: .6; }
+h1 { font-size: 30px; line-height: 1.08; letter-spacing: -.03em; font-weight: 800; margin: 6px 0 8px; }
+.sub { opacity: .72; font-size: 15px; }
+.steps { margin: 18px 0; display: grid; gap: 12px; }
+.steps div { display: flex; gap: 10px; align-items: center; font-size: 14px; opacity: 0; transform: translateY(6px); transition: all .4s; }
+.steps div.on { opacity: 1; transform: none; }
+.limits { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
+.limits span { font-size: 12px; padding: 6px 10px; border-radius: 999px; }
+.plan { text-align: left; width: 100%; border-radius: 20px; padding: 16px; margin-bottom: 10px; transition: transform .25s, border-color .25s, background .25s; }
+.plan .row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.plan h3 { font-size: 16px; font-weight: 700; letter-spacing: -.01em; }
+.plan .facts { display: flex; gap: 16px; margin-top: 10px; font-size: 13px; }
+.plan .facts b { display: block; font-size: 15px; }
+.plan p { font-size: 13px; margin-top: 8px; opacity: .75; }
+.badge { font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+.ruled { font-size: 13px; opacity: .6; padding: 6px 4px 14px; }
+.legs { display: grid; gap: 8px; margin: 14px 0; }
+.leg { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 16px; font-size: 14px; }
+.leg i { font-size: 20px; }
+.leg .t { flex: 1; } .leg .t b { display: block; font-size: 14px; } .leg .t span { font-size: 12px; opacity: .7; }
+.tag { font-size: 10px; font-weight: 700; letter-spacing: .1em; padding: 3px 7px; border-radius: 6px; }
+.actions { display: grid; gap: 8px; margin: 6px 0 18px; }
+.actions div { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.actions i { font-size: 18px; margin-top: 1px; }
+.total { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 2px; margin-bottom: 10px; }
+.total b { font-size: 24px; letter-spacing: -.02em; }
+.notif { position: absolute; left: 12px; right: 12px; top: 12px; z-index: 20; display: flex; gap: 12px; padding: 14px; border-radius: 22px; transform: translateY(-130%); transition: transform .6s cubic-bezier(.2,.9,.2,1.05); text-align: left; }
+.notif.show { transform: none; }
+.notif .ic { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; flex: none; }
+.notif b { font-size: 14px; display: flex; justify-content: space-between; } .notif b span { font-weight: 400; opacity: .6; font-size: 12px; }
+.notif p { font-size: 13px; margin-top: 2px; }
+.demo { margin-top: 10px; font-size: 12px; padding: 10px; border-radius: 12px; border: 1px dashed currentColor; opacity: .55; width: 100%; }
+.status { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+.status .pulse { width: 8px; height: 8px; border-radius: 50%; position: relative; }
+.status .pulse::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid currentColor; opacity: 0; animation: ping 1.8s infinite; }
+@keyframes ping { 0% { transform: scale(.5); opacity: .8 } 100% { transform: scale(1.8); opacity: 0 } }
+.next { margin-top: 16px; padding: 14px 16px; border-radius: 18px; display: flex; gap: 12px; align-items: center; font-size: 14px; }
+.next i { font-size: 22px; }
+
+/* screen transitions */
+.screen { transition: opacity .55s, transform .7s cubic-bezier(.2,.8,.2,1), filter .55s; }
+.screen.enter { opacity: 0; transform: translateY(24px) scale(.98); filter: blur(8px); }
+.screen.leave { opacity: 0; transform: translateY(-16px) scale(1.02); filter: blur(10px); pointer-events: none; }
+.tickets .screen.enter { transform: translateX(40px) rotate(1deg); filter: none; }
+.tickets .screen.leave { transform: translateX(-40px) rotate(-1deg); filter: none; }
+
+/* ================= THEME: FROZEN GLASS ================= */
+body.glass { background: #b7c6d3; color: #142230; }
+.glass .ambient { background: radial-gradient(120% 80% at 20% 0%, #f5f9fc 0%, #cfdbe5 45%, #8ea3b5 100%); }
+.glass .ambient span { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .7; animation: drift 18s ease-in-out infinite alternate; }
+.glass .ambient span:nth-child(1) { width: 520px; height: 520px; left: -120px; top: 10%; background: #ffffff; }
+.glass .ambient span:nth-child(2) { width: 420px; height: 420px; right: -80px; bottom: -60px; background: #a9c6dd; animation-duration: 22s; }
+.glass .ambient span:nth-child(3) { width: 300px; height: 300px; right: 25%; top: -80px; background: #e3f3ff; animation-duration: 15s; }
+@keyframes drift { to { transform: translate(80px, 60px) scale(1.15); } }
+.glass .frame { background: rgba(240,246,250,.42); backdrop-filter: blur(30px) saturate(1.3); border: 1px solid rgba(255,255,255,.8); box-shadow: 0 40px 80px -30px rgba(20,40,60,.5), inset 0 1px 0 #fff; }
+.glass .avatar { background: #142230; color: #e9f2f8; }
+.glass .cta { background: #142230; color: #eef5fa; }
+.glass .cta.alt { background: rgba(255,255,255,.55); color: #142230; border: 1px solid rgba(255,255,255,.9); }
+.glass .card, .glass .plan, .glass .leg, .glass .next { background: rgba(255,255,255,.42); border: 1px solid rgba(255,255,255,.85); backdrop-filter: blur(14px); }
+.glass .plan.sel { background: rgba(255,255,255,.78); border-color: #142230; transform: scale(1.01); }
+.glass .badge { background: #142230; color: #e9f2f8; }
+.glass .badge.warn { background: #ffe3c2; color: #7a3d00; }
+.glass .limits span { background: rgba(255,255,255,.55); border: 1px solid rgba(255,255,255,.9); }
+.glass .tag { background: #142230; color: #fff; } .glass .tag.kept { background: rgba(20,34,48,.12); color: #142230; }
+.glass .notif { background: rgba(250,253,255,.82); backdrop-filter: blur(20px); border: 1px solid #fff; box-shadow: 0 20px 40px -20px rgba(20,40,60,.5); }
+.glass .notif .ic { background: #142230; color: #fff; }
+.glass .status { background: rgba(255,255,255,.55); border: 1px solid #fff; color: #0f6a4d; } .glass .status .pulse { background: #12a372; }
+.glass .status.bad { color: #a3341f; } .glass .status.bad .pulse { background: #e0533a; }
+.glass .eyebrow, .glass .tag, .glass .badge { font-family: "JetBrains Mono", monospace; }
+.glass h1 { font-weight: 700; }
+.glass .warnline { color: #a3341f; }
+/* glass chain */
+.gchain { height: 170px; perspective: 900px; display: flex; align-items: center; justify-content: center; margin: 6px -22px 4px; }
+.gchain .row { display: flex; gap: 10px; transform: rotateX(12deg) rotateY(-5deg); transform-style: preserve-3d; animation: float 6s ease-in-out infinite; }
+@keyframes float { 50% { transform: rotateX(9deg) rotateY(-2deg) translateY(-5px); } }
+.gb { position: relative; width: 78px; height: 104px; border-radius: 14px; padding: 9px; display: flex; flex-direction: column; justify-content: space-between; background: rgba(255,255,255,.4); border: 1px solid rgba(255,255,255,.95); box-shadow: 0 26px 30px -18px rgba(20,40,60,.5), inset 0 1px 0 #fff; font-family: "JetBrains Mono", monospace; font-size: 9px; letter-spacing: .08em; transition: background .6s, transform .8s cubic-bezier(.2,.8,.2,1), opacity .6s; }
+.gb i { font-size: 18px; }
+.gb b { display: block; font-size: 10px; } .gb span { opacity: .6; }
+.gb svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.gb svg path { fill: none; stroke: #6b1d10; stroke-width: 1.2; stroke-dasharray: 160; stroke-dashoffset: 160; animation: crack .7s .5s forwards; }
+@keyframes crack { to { stroke-dashoffset: 0; } }
+.gb.late { background: rgba(255,226,190,.55); } .gb.broken { background: rgba(255,196,186,.6); } .gb.risk { opacity: .5; }
+.gb.broken { animation: shake .4s .5s 2; }
+@keyframes shake { 25% { transform: translateX(-3px) } 75% { transform: translateX(3px) } }
+.gb.fresh { background: rgba(196,255,228,.65); animation: rise 1s cubic-bezier(.2,.9,.2,1.1) both; }
+@keyframes rise { from { transform: translateY(60px) scale(.6); opacity: 0; } }
+
+/* ================= THEME: TICKET STACK ================= */
+body.tickets { background: #d8cfbd; color: #2b2620; }
+.tickets .ambient { background: #d8cfbd url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.75' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E"); }
+.tickets .ambient span { display: none; }
+.tickets .frame { background: #f3eee3; box-shadow: 0 2px 0 #c9bfa9, 0 50px 70px -40px rgba(60,40,20,.55); }
+.tickets h1 { font-family: "Fraunces", serif; font-weight: 700; letter-spacing: -.02em; }
+.tickets .logo { font-family: "Fraunces", serif; font-weight: 700; font-size: 20px; }
+.tickets .eyebrow, .tickets .tag, .tickets .badge, .tickets .limits span, .tickets .demo { font-family: "Space Mono", monospace; }
+.tickets .avatar { background: #2b2620; color: #f3eee3; }
+.tickets .cta { background: #2b2620; color: #fffaf0; border-radius: 14px; }
+.tickets .cta.alt { background: transparent; color: #2b2620; border: 2px solid #2b2620; }
+.tickets .plan, .tickets .leg, .tickets .next { background: #fffaf0; border: 2px solid transparent; box-shadow: 0 2px 0 #ddd3c0; border-radius: 14px; }
+.tickets .plan.sel { border-color: #2b2620; transform: rotate(-.6deg); }
+.tickets .badge { background: #2f7a4a; color: #fffaf0; border-radius: 4px; } .tickets .badge.warn { background: #c2402a; }
+.tickets .limits span { background: #fffaf0; border: 1px dashed #b5a98f; border-radius: 4px; }
+.tickets .tag { background: #2f7a4a; color: #fffaf0; } .tickets .tag.kept { background: #e8e0cf; color: #6b604d; }
+.tickets .notif { background: #fffaf0; box-shadow: 0 2px 0 #ddd3c0, 0 20px 30px -20px rgba(60,40,20,.5); border-radius: 16px; }
+.tickets .notif .ic { background: #c2402a; color: #fff; border-radius: 8px; }
+.tickets .status { background: #fffaf0; color: #2f7a4a; font-family: "Space Mono", monospace; font-size: 12px; } .tickets .status .pulse { background: #2f7a4a; }
+.tickets .status.bad { color: #c2402a; } .tickets .status.bad .pulse { background: #c2402a; }
+.tickets .warnline { color: #c2402a; }
+/* ticket chain */
+.tchain { display: grid; gap: 8px; margin: 14px 0 6px; }
+.tk { position: relative; display: flex; min-height: 64px; background: #fffaf0; border-radius: 12px; box-shadow: 0 2px 0 #ddd3c0, 0 12px 18px -14px rgba(60,40,20,.5); font-family: "Space Mono", monospace; transition: opacity .5s, transform .5s; }
+.tk::before, .tk::after { content: ""; position: absolute; right: 70px; width: 14px; height: 14px; border-radius: 50%; background: #f3eee3; transform: translateX(50%); }
+.tk::before { top: -7px; } .tk::after { bottom: -7px; }
+.tk .m { flex: 1; padding: 10px 12px; font-size: 12px; display: flex; gap: 10px; align-items: center; }
+.tk .m i { font-size: 22px; } .tk .m b { display: block; font-size: 14px; }
+.tk .s { width: 70px; border-left: 2px dashed #ddd3c0; display: grid; place-items: center; font-size: 10px; text-align: center; padding: 4px; opacity: .75; }
+.tk .stamp { position: absolute; right: 82px; top: 50%; border: 2.5px solid #c2402a; color: #c2402a; padding: 2px 8px; font-weight: 700; font-size: 12px; border-radius: 4px; transform: translateY(-50%) rotate(-8deg); animation: stamp .45s .4s cubic-bezier(.3,1.6,.5,1) both; background: rgba(255,250,240,.7); }
+@keyframes stamp { from { transform: translateY(-50%) rotate(-8deg) scale(2.6); opacity: 0; } }
+.tk.risk { opacity: .55; } .tk.risk .stamp { border-color: #9b8b6c; color: #9b8b6c; }
+.tk.ok .stamp, .tk.fresh .stamp { border-color: #2f7a4a; color: #2f7a4a; }
+.tk.torn { animation: tear .8s cubic-bezier(.5,0,.6,1) forwards; }
+@keyframes tear { 40% { transform: rotate(-4deg) translateX(-8px); } 100% { transform: translate(-120px, 80px) rotate(-22deg); opacity: 0; } }
+.tk.print { animation: print 1.1s cubic-bezier(.2,.8,.2,1) both; transform-origin: top; }
+@keyframes print { from { clip-path: inset(0 0 100% 0); transform: translateY(-16px); } to { clip-path: inset(0 0 0 0); } }
+.tk.print .m { background: repeating-linear-gradient(90deg, transparent 0 7px, rgba(47,122,74,.05) 7px 8px); }
+</style>
+</head>
+<body class="glass">
+<div class="ambient"><span></span><span></span><span></span></div>
+<div class="switch">
+  <button data-theme="glass" class="on">Frozen glass</button>
+  <button data-theme="tickets">Ticket stack</button>
+</div>
+<div class="frame" id="frame"><div class="notif" id="notif"></div></div>
+
+<script>
+const LEGS = {
+  flight: { icon: "ti-plane", mode: "Flight", title: "IndiGo 6E 2417", a: "DEL 15:40 → BLR 18:30", stub: "PNR\nK7QX2M" },
+  flightNew: { icon: "ti-plane", mode: "Flight", title: "IndiGo 6E 2135", a: "DEL 14:30 → BLR 17:15", stub: "PNR\nR2TQ8L" },
+  train: { icon: "ti-train", mode: "Train", title: "Mysuru Intercity", a: "KSR 20:30 → MYS 23:05", stub: "CHAIR\nC2 · 41" },
+  hotel: { icon: "ti-building", mode: "Hotel", title: "Chamundi Courtyard", a: "Check in by 00:00", stub: "1\nNIGHT" },
+  event: { icon: "ti-confetti", mode: "Wedding", title: "Kavya's muhurtham", a: "Tue 09:00 · Mysuru", stub: "TUE\n09:00" },
+};
+const STATES = {
+  ok: [["flight"], ["train"], ["hotel"], ["event"]],
+  broken: [["flight", "late", "+2H LATE", "DEL 17:40 → BLR 20:30"], ["train", "broken", "MISSED"], ["hotel", "risk", "AT RISK"], ["event", "risk", "AT RISK"]],
+};
+Object.assign(LEGS, {
+  flightLate: { icon: "ti-plane", mode: "Flight", title: "IndiGo 6E 2417", a: "DEL 17:40 → BLR 20:30", stub: "PNR\nK7QX2M" },
+  cab: { icon: "ti-car", mode: "Cab", title: "Airport cab to Mysuru", a: "BLR 20:50 → MYS 00:35", stub: "CAB\nFOR 2" },
+  airportHotel: { icon: "ti-bed", mode: "Stay", title: "Runway Inn, Devanahalli", a: "1 night · cab at 04:50", stub: "1\nNIGHT" },
+  shatabdi: { icon: "ti-train", mode: "Train", title: "Morning Shatabdi", a: "KSR 06:10 → MYS 08:10", stub: "CHAIR\nFOR 2" },
+});
+// Real plans and numbers from web/src/data/scenarios.json (inbound-delay).
+const PLANS = [
+  { id: "earlier", label: "Switch to the earlier IndiGo flight", arrive: "Mon 23:05", extra: "₹2,900", changes: "1", badge: "Best", spare: "9h 55m",
+    why: "Keeps your train and hotel. 9h 55m to spare before the muhurtham.",
+    review: [["flightNew", "NEW"], ["train", "KEPT"], ["hotel", "KEPT", "Check in 23:25"]],
+    actions: [["ti-ticket", "Book 6E 2135 for you and Lakshmi (fare difference and change fee)"], ["ti-message", "Tell Meera you'll arrive at 23:05"]],
+    fixed: [["flightNew", "fresh", "NEW"], ["train", "ok", "KEPT"], ["hotel", "ok", "KEPT"], ["event", "ok", "ON TIME"]],
+    next: ["Leave for the airport by 12:30", "New flight 6E 2135 boards 13:50"] },
+  { id: "cab", label: "Keep the late flight, cab to Mysuru", arrive: "Tue 00:35", extra: "₹3,340", changes: "1", spare: "8h 25m",
+    why: "No early dash to the airport, but you reach the hotel after the desk closes.",
+    review: [["flightLate", "KEPT"], ["cab", "NEW"], ["hotel", "KEPT", "Late check-in 00:55"]],
+    actions: [["ti-car", "Book the airport cab to Mysuru"], ["ti-receipt-refund", "Cancel the Intercity train, about ₹560 back"], ["ti-building", "Tell the hotel you'll check in at 00:55"], ["ti-message", "Tell Meera you'll arrive at 00:35"]],
+    fixed: [["flightLate", "ok", "KEPT"], ["cab", "fresh", "NEW"], ["hotel", "ok", "LATE IN", "Late check-in 00:55"], ["event", "ok", "ON TIME"]],
+    next: ["Leave for the airport by 15:40", "6E 2417 now boards 17:00"] },
+  { id: "overnight", label: "Sleep near the airport, morning train", arrive: "Tue 08:10", extra: "₹3,660", changes: "2", badge: "Risky", warn: true, spare: "50m",
+    why: "Only 50 min before the muhurtham, and a 04:50 start for your mum.",
+    review: [["flightLate", "KEPT"], ["airportHotel", "NEW"], ["shatabdi", "NEW"]],
+    actions: [["ti-bed", "Book Runway Inn near the airport"], ["ti-train", "Book the 06:10 Shatabdi for 2"], ["ti-receipt-refund", "Cancel the Intercity train, about ₹560 back"], ["ti-message", "Tell Meera you'll arrive at 08:10"]],
+    fixed: [["flightLate", "ok", "KEPT"], ["airportHotel", "fresh", "NEW"], ["shatabdi", "fresh", "NEW"], ["event", "ok", "ON TIME"]],
+    next: ["Leave for the airport by 15:40", "6E 2417 now boards 17:00"] },
+];
+let theme = "glass", state = "home", sel = "earlier";
+const frame = document.getElementById("frame"), notif = document.getElementById("notif");
+
+const CHARS = "!<>-_\\/[]{}—=+*^?#ABCDEFGHJKLMNPRSTUVWXYZ0123456789";
+function scramble(el, text, dur) {
+  const start = performance.now();
+  (function f(now) {
+    const p = Math.min(1, (now - start) / dur), n = Math.floor(p * text.length);
+    el.textContent = text.slice(0, n) + (theme === "glass" ? [...text.slice(n)].map(c => c === " " ? " " : CHARS[Math.random() * CHARS.length | 0]).join("") : "");
+    if (p < 1) requestAnimationFrame(f);
+  })(start);
+}
+
+function chain(kind) {
+  const rows = Array.isArray(kind) ? kind : STATES[kind];
+  if (theme === "glass") {
+    const crack = '<svg viewBox="0 0 78 104"><path d="M8 14 L30 40 L22 52 L46 70 L40 84 L72 98"/></svg>';
+    return `<div class="gchain"><div class="row">${rows.map(([id, st, , alt]) => { const l = LEGS[id]; return `<div class="gb ${st || ""}"><i class="ti ${l.icon}"></i><div><b>${l.mode.toUpperCase()}</b><span>${(alt || l.a).split(" → ")[0]}</span></div>${st === "late" || st === "broken" ? crack : ""}</div>`; }).join("")}</div></div>`;
+  }
+  return `<div class="tchain">${rows.map(([id, st, stamp, alt]) => { const l = LEGS[id]; return `<div class="tk ${st || ""} ${st === "fresh" ? "print" : ""}"><div class="m"><i class="ti ${l.icon}"></i><div><b>${l.title}</b>${alt || l.a}</div></div><div class="s">${l.stub.replace("\n", "<br>")}</div>${stamp ? `<span class="stamp">${stamp}</span>` : ""}</div>`; }).join("")}</div>`;
+}
+
+const SCREENS = {
+  home: () => `
+    <div class="topbar"><div class="logo"><span class="mark"><span></span><span></span></span>Domino</div><div class="avatar">AR</div></div>
+    <div class="eyebrow">Mon 26 Oct · with Lakshmi</div>
+    <h1 data-scr="Your trip to Mysuru">Your trip to Mysuru</h1>
+    <p class="sub">Kavya's wedding, Tuesday 09:00</p>
+    ${chain("ok")}
+    <div><span class="status"><span class="pulse"></span>Watching 4 bookings · all on time</span></div>
+    <div class="next"><i class="ti ti-clock"></i><div><b>Leave for the airport by 13:40</b><br><span style="opacity:.7">Flight 6E 2417 boards 15:00, gate 32</span></div></div>
+    <div class="grow"></div>
+    <button class="demo" data-go="alertIn">Preview: send a disruption</button>`,
+  alert: () => `
+    <div class="topbar"><button class="back" data-go="home"><i class="ti ti-arrow-left"></i>Trip</button><span class="status bad"><span class="pulse"></span>Disruption</span></div>
+    <div class="eyebrow">Detected 10:50 · 41 min before IndiGo</div>
+    <h1 data-scr="Your flight will leave 2 hours late">Your flight will leave 2 hours late</h1>
+    <p class="sub">The plane flying 6E 2417 is still in Bengaluru, 118 min behind.</p>
+    ${chain("broken")}
+    <p class="warnline" style="font-size:14px;font-weight:600">You'd land at 20:30 and miss the 20:30 train. Your hotel and the muhurtham are at risk.</p>
+    <div class="grow" style="min-height:18px"></div>
+    <button class="cta" data-go="think">Fix my trip <i class="ti ti-arrow-right"></i></button>`,
+  think: () => `
+    <div class="topbar"><button class="back" data-go="alert"><i class="ti ti-arrow-left"></i>Back</button><span></span></div>
+    <div class="eyebrow">Working on it</div>
+    <h1 data-scr="Finding a way to Mysuru">Finding a way to Mysuru</h1>
+    <div class="limits"><span>By Tue 09:00</span><span>Max ₹4,000 extra</span><span>No overnight buses</span><span>Short waits for Mum</span></div>
+    <div class="steps">
+      <div><i class="ti ti-search"></i>Checking 5 ways to get there</div>
+      <div><i class="ti ti-scale"></i>Testing each one against your limits</div>
+      <div><i class="ti ti-ban"></i>2 don't work: an overnight bus, ₹9,040 over budget</div>
+      <div><i class="ti ti-check"></i>3 get you there in time</div>
+    </div>`,
+  options: () => `
+    <div class="topbar"><button class="back" data-go="alert"><i class="ti ti-arrow-left"></i>Back</button><span class="eyebrow">3 options</span></div>
+    <h1 data-scr="Here's how to fix it">Here's how to fix it</h1>
+    <p class="sub" style="margin-bottom:14px">Ranked for you and your mum.</p>
+    ${PLANS.map(p => `<button class="plan ${p.id === sel ? "sel" : ""}" data-sel="${p.id}">
+      <div class="row"><h3>${p.label}</h3>${p.badge ? `<span class="badge ${p.warn ? "warn" : ""}">${p.badge}</span>` : ""}</div>
+      <div class="facts"><div>Arrive<b>${p.arrive}</b></div><div>Extra<b>${p.extra}</b></div><div>Changes<b>${p.changes}</b></div></div>
+      <p>${p.why}</p></button>`).join("")}
+    <div class="ruled">2 more ruled out by your limits</div>
+    <div class="grow"></div>
+    <button class="cta" data-go="review">Review this plan <i class="ti ti-arrow-right"></i></button>`,
+  review: () => { const p = PLANS.find(x => x.id === sel); return `
+    <div class="topbar"><button class="back" data-go="options"><i class="ti ti-arrow-left"></i>Options</button><span></span></div>
+    <div class="eyebrow">Your new trip</div>
+    <h1 data-scr="${p.label}">${p.label}</h1>
+    <div class="legs">${p.review.map(([id, tag, alt]) => { const l = LEGS[id]; return `<div class="leg"><i class="ti ${l.icon}"></i><div class="t"><b>${l.title}</b><span>${alt || l.a}</span></div><span class="tag ${tag === "KEPT" ? "kept" : ""}">${tag}</span></div>`; }).join("")}</div>
+    <div class="eyebrow" style="margin-bottom:8px">Domino will</div>
+    <div class="actions">${p.actions.map(([ic, t]) => `<div><i class="ti ${ic}"></i>${t}</div>`).join("")}</div>
+    <div class="grow"></div>
+    <div class="total"><span>Extra for 2 people</span><b>${p.extra}</b></div>
+    <button class="cta" data-go="booking">Approve and book</button>
+    <button class="ghost" data-go="options">See other options</button>`; },
+  booking: () => `
+    <div class="grow"></div>
+    <div class="eyebrow" style="text-align:center">Booking</div>
+    <h1 data-scr="Securing your seats" style="text-align:center">Securing your seats</h1>
+    <div class="steps" style="justify-items:center">${PLANS.find(x => x.id === sel).actions.map(([ic, t]) => `<div><i class="ti ${ic}"></i>${t.replace(/^(Book|Cancel|Tell)/, m => ({ Book: "Booked:", Cancel: "Cancelled:", Tell: "Told:" })[m])}</div>`).join("")}</div>
+    <div class="grow"></div>`,
+  done: () => { const p = PLANS.find(x => x.id === sel); return `
+    <div class="topbar"><div class="logo"><span class="mark"><span></span><span></span></span>Domino</div><div class="avatar">AR</div></div>
+    <div class="eyebrow">Fixed at 10:53</div>
+    <h1 data-scr="You're back on track">You're back on track</h1>
+    <p class="sub">You'll reach Mysuru ${p.arrive} with ${p.spare} to spare.</p>
+    ${chain(p.fixed)}
+    <div><span class="status"><span class="pulse"></span>Watching ${p.fixed.length} bookings · all on time</span></div>
+    <div class="next"><i class="ti ti-clock"></i><div><b>${p.next[0]}</b><br><span style="opacity:.7">${p.next[1]}</span></div></div>
+    <div class="grow"></div>
+    <button class="ghost" data-go="home">Start the preview again</button>`; },
+};
+
+let current = null, timers = [];
+const later = (ms, fn) => timers.push(setTimeout(fn, ms));
+function go(next) {
+  timers.forEach(clearTimeout); timers = [];
+  notif.classList.remove("show");
+  if (next === "alertIn") return showNotif();
+  state = next;
+  const el = document.createElement("section");
+  el.className = "screen enter"; el.innerHTML = SCREENS[next]();
+  frame.appendChild(el);
+  const old = current; current = el;
+  setTimeout(() => {
+    el.classList.remove("enter");
+    if (old) { old.classList.add("leave"); setTimeout(() => old.remove(), 700); }
+  }, 30);
+  el.querySelectorAll("[data-scr]").forEach(h => scramble(h, h.dataset.scr, theme === "glass" ? 900 : 700));
+  const steps = [...el.querySelectorAll(".steps div")];
+  steps.forEach((s, i) => later(500 + i * 650, () => s.classList.add("on")));
+  if (next === "think") later(500 + steps.length * 650 + 400, () => go("options"));
+  if (next === "booking") later(500 + steps.length * 650 + 400, () => go("done"));
+}
+function showNotif() {
+  notif.innerHTML = `<div class="ic"><i class="ti ti-alert-triangle"></i></div><div><b>Domino <span>now</span></b><p>Your flight will leave about 2h late. You'd miss your train. Tap to fix it.</p></div>`;
+  notif.classList.add("show");
+  later(3800, () => go("alert"));
+}
+notif.addEventListener("click", () => go("alert"));
+frame.addEventListener("click", e => {
+  const s = e.target.closest("[data-sel]");
+  if (s) { sel = s.dataset.sel; current.querySelectorAll(".plan").forEach(p => p.classList.toggle("sel", p.dataset.sel === sel)); return; }
+  const g = e.target.closest("[data-go]");
+  if (g) go(g.dataset.go);
+});
+document.querySelectorAll(".switch button").forEach(b => b.addEventListener("click", () => {
+  theme = b.dataset.theme; document.body.className = theme;
+  document.querySelectorAll(".switch button").forEach(x => x.classList.toggle("on", x === b));
+  go(state);
+}));
+go("home");
+</script>
+</body>
+</html>

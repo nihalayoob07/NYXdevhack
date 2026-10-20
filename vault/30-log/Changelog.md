@@ -9,6 +9,11 @@ summary: Every change to the project, newest first. One entry per commit.
 
 Newest first. Use the [[Changelog entry]] template: date, who, what changed, why, notes touched.
 
+## 2026-10-20: Ticket stack app replaces the landing page (Nihal)
+**What:** `/` is now the product: a phone-sized app in the ticket stack look (`components/app/TripApp.tsx`, `Ticket.tsx`). Flow: home → push notification → alert with stamped tickets → editable limits → Fix my trip (live agent) → ranked options → review with drafted actions → booking → repaired trip. Real engine and agent data, all 4 scenarios via "Demo: send a disruption". Removed the landing page, `DominoChain`, the demo console and its `Plans`/`Actions`; `/demo` redirects to `/`. Nav only shows on stranded mode. New fonts Fraunces, Space Mono, Inter Tight. Preview saved in `vault/10-project/design/`.
+**Why:** The site should be the solution as its own product, not an explainer. MVP: essentials only.
+**Notes touched:** [[Handoff]], [[Architecture]], [[Decisions]], [[Demo Script]], [[Tasks]], [[Home]]
+
 ## 2026-10-20: Groq instead of Claude, auto-deploy (Nihal)
 **What:** `agent.ts` now calls Groq's OpenAI-compatible endpoint with `fetch` (key `GROQ_API_KEY`, model `GROQ_MODEL`, default `openai/gpt-oss-120b`). Lookups run server-side and go in the first message; a run is exactly 2 requests (forced `check_constraints` tool call, then a JSON-mode recommendation in the engine's order), about 4,000 tokens, ~2 s. Retries once on a short 429. Prompt rules stop invented facts (a test run claimed a kept hotel was lost). Model output validated with zod. Removed `@anthropic-ai/sdk`. UI labels say "Live AI (Groq)" / "The AI". New Vercel project `nyxdevhack` linked to the repo: pushes to `main` deploy to https://nyxdevhack.vercel.app.
 **Why:** Free API for the shortlist. Gemini was tried first but Google denied the project access (403).

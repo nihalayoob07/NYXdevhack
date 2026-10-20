@@ -97,3 +97,128 @@ a,
 button {
   touch-action: manipulation;
 }
+
+/* ---------- Ticket stack: the app at / ---------- */
+/* Paper palette, light only on purpose (printed tickets). Scoped so stranded mode keeps the board palette. */
+.paper {
+  --paper: #d8cfbd;
+  --sheet: #f3eee3;
+  --card: #fffaf0;
+  --ink: #2b2620;
+  --edge: #ddd3c0;
+  --faded: #9b8b6c;
+  --go: #2f7a4a;
+  --stop: #c2402a;
+  --warn: #b0661a;
+  color-scheme: light;
+  color: var(--ink);
+  background: var(--paper)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.75' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
+  font-family: var(--font-inter-tight), system-ui, sans-serif;
+}
+.paper .serif {
+  font-family: var(--font-fraunces), Georgia, serif;
+}
+.paper .typed {
+  font-family: var(--font-space-mono), monospace;
+}
+
+/* A ticket: punched notches above the stub, perforated stub edge. */
+.tk {
+  position: relative;
+  display: flex;
+  min-height: 64px;
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: 0 2px 0 var(--edge), 0 12px 18px -14px rgb(60 40 20 / 0.5);
+}
+.tk::before,
+.tk::after {
+  content: "";
+  position: absolute;
+  right: 70px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--sheet);
+  transform: translateX(50%);
+}
+.tk::before {
+  top: -7px;
+}
+.tk::after {
+  bottom: -7px;
+}
+.tk-stub {
+  width: 70px;
+  border-left: 2px dashed var(--edge);
+}
+
+/* Rubber stamp lands with a thump. */
+.stamp {
+  position: absolute;
+  right: 82px;
+  top: 50%;
+  border: 2.5px solid currentColor;
+  padding: 2px 8px;
+  font-weight: 700;
+  font-size: 12px;
+  border-radius: 4px;
+  background: rgb(255 250 240 / 0.75);
+  transform: translateY(-50%) rotate(-8deg);
+  animation: stamp 0.45s 0.4s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+@keyframes stamp {
+  from {
+    transform: translateY(-50%) rotate(-8deg) scale(2.6);
+    opacity: 0;
+  }
+}
+
+/* A new ticket prints in from the top. */
+.tk-print {
+  animation: print 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes print {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-16px);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.pulse {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.pulse::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  opacity: 0;
+  animation: ping 1.8s infinite;
+}
+@keyframes ping {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stamp,
+  .tk-print,
+  .pulse::after {
+    animation: none;
+  }
+}

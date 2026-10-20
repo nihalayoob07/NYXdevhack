@@ -4,7 +4,9 @@
 
 Domino treats a trip as a chain of linked bookings. When one link breaks, it shows the ripple, sees it coming before the airline announces it, repairs the whole chain within the traveller's own limits, and drafts the refunds, DGCA compensation claim and messages, ready to approve.
 
-**Live:** https://domino-nyx.vercel.app
+**Live:** https://nyxdevhack.vercel.app (auto-deploys from `main`)
+
+**Continuing the work?** Read [`vault/10-project/Handoff.md`](vault/10-project/Handoff.md) first: where we left off and what to pick up next.
 
 ## Run it
 
@@ -14,7 +16,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. Pages: `/` landing, `/demo` live demo with the chaos panel, `/stranded` low-battery chat mode.
+Open http://localhost:3000. Pages: `/` the app (ticket stack design; tap "Demo: send a disruption" to start), `/stranded` low-battery chat mode. `/demo` redirects to `/`.
 
 To use the live AI, copy `web/.env.example` to `web/.env.local` and set `GROQ_API_KEY` (free at console.groq.com). Without a key the demo uses the built-in planner, which runs the same steps.
 

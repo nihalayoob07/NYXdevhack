@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
-import { DemoConsole } from "@/components/demo/DemoConsole";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Live demo | Domino" };
-
+// The old demo console became the app at /.
 export default function DemoPage() {
-  return <DemoConsole />;
+  redirect("/");
 }

@@ -9,6 +9,7 @@ summary: Entry point for the Domino project vault. Start here.
 Team NYX, Devhack Sahyadri. **One delay shouldn't break your whole trip.**
 
 ## Project
+- [[Handoff]]: **where we left off and what to pick up next**
 - [[Domino Overview]]: problem, idea, pitch
 - [[Architecture]]: how the code is laid out and why
 - [[Demo Script]]: the 90-second judge walkthrough

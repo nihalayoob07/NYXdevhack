@@ -9,6 +9,9 @@ summary: Lightweight decision log. Add new decisions at the top.
 
 Format: date, decision, why, who.
 
+### 2026-10-20: The site is the product: ticket stack app
+`/` is now Domino itself, a phone-sized app in the "ticket stack" look (paper, Fraunces + Space Mono, bookings as tickets with stamps), not a landing page explaining it. Built from the preview in `10-project/design/ticket-stack-preview.html`. The "frozen glass" preview was dropped. The old landing page and demo console were removed; a small "Demo: send a disruption" button on the home screen replaces the chaos panel. MVP: only the essential flow. Why: judges should use the product, not read about it. (Nihal)
+
 ### 2026-10-20: Groq free tier instead of Claude
 The agent calls Groq through its OpenAI-compatible endpoint with plain `fetch` (no SDK). Model from `GROQ_MODEL`, default `openai/gpt-oss-120b`. Tried Gemini first: Google returned 403 "project denied access" on every model. The read-only lookups (bookings, affected chain, candidates) are sent up front instead of as tools, so a run needs about 2 requests instead of 8: free tiers cap requests per minute. Why: a paid key is overkill for the shortlist. (Nihal)
 
@@ -25,6 +28,6 @@ Next.js app in `web/` so a `mobile/` folder can sit next to it later. (Team)
 Layover = gap between legs minus the transfer time the connection needs. Why: an early flight that lands four hours before the train really is a long wait for mum, but a 90-minute airport-to-station transfer is not waiting. (Raahil)
 
 ### 2026-10-20: Departure-board visual language
-Dark and light themes, Geist + Geist Mono, one signage-yellow accent. Red only for broken links, green only for repaired ones. (Raahil)
+Dark and light themes, Geist + Geist Mono, one signage-yellow accent. Red only for broken links, green only for repaired ones. Now only used by stranded mode; the app uses the ticket stack look. (Raahil)
 
 Related: [[Architecture]]

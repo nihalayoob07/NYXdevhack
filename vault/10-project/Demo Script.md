@@ -7,14 +7,16 @@ summary: The 90-second walkthrough for judges.
 ---
 # Demo Script (about 90 seconds)
 
-1. **Landing page (10s).** "One delay shouldn't break your whole trip." Let the hero chain loop once: planned, broken, repaired.
-2. **Run the demo.** Show Ananya's trip: flight, train, hotel, wedding. "Each link depends on the one before."
-3. **Chaos panel: Inbound flight delayed 2h.** Watch the flight go orange and the next three dominoes tip over red.
-4. **Point at the alert.** "The aircraft is still in Bengaluru, 118 minutes late. The airline app still says ON TIME." Wait for it to flip to DELAYED: "Domino warned you 41 minutes earlier."
-5. **Agent log.** Each tool call streams in. Read the limits it extracted: deadline, budget, no overnight buses, short waits for mum.
-6. **Recovery options.** Option A recommended. Read B's trade-off aloud. Open "ruled out" to show the overnight bus and the Hyderabad route rejected by code.
-7. **Approve.** The repaired chain slides in green with the cost and time difference.
-8. **Finished actions.** Approve all. Then switch to **Flight cancelled** to show the DGCA compensation claim.
-9. **Stranded mode (10s).** Reply "1". "Works on 8% battery."
+Open https://nyxdevhack.vercel.app. It is the app itself, Ananya's phone.
+
+1. **Home (10s).** "Your trip to Mysuru": four tickets, flight → train → hotel → wedding. "Domino watches every booking. Each one depends on the one before."
+2. **Send a disruption.** Tap "Demo: send a disruption" → **Inbound flight delayed 2h**. A push notification drops in. Wait for it or tap it.
+3. **Alert.** "Detected 10:50, 41 min before IndiGo." The flight gets a +2H LATE stamp, the train MISSED, hotel and muhurtham AT RISK. "The aircraft is still in Bengaluru. The airline app still says on time."
+4. **Limits.** Point at the chips: by Tue 09:00, max ₹4,000, no overnight buses, short waits for mum. Tap "Edit limits" to show they're typed in plain words.
+5. **Fix my trip.** The agent's steps tick in. "Code checks every time and rupee. The AI only explains."
+6. **Options.** Best is the earlier IndiGo flight. Read the cab option's trade-off. "2 more ruled out by your limits": the overnight bus and the Hyderabad route.
+7. **Review.** NEW and KEPT stamps. Open the drafted message to Meera. Approve and book: actions tick off, then "You're back on track" with the new tickets printing in.
+8. **Start again → Flight cancelled.** Review screen shows the DGCA compensation claim and "You get back ₹1,280".
+9. **Stranded mode (10s).** From the demo menu: "Low battery? Stranded mode". Reply "1". "Works on 8% battery."
 
 Judge question to expect: "What if the AI hallucinates?" Answer: the engine checks every time and rupee; the AI only explains, and the numbers override it. See [[Architecture]].

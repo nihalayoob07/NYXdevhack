@@ -19,14 +19,11 @@ export function Nav() {
           Domino
         </Link>
         <div className="flex items-center gap-1 text-sm">
-          <Link href="/stranded" className="rounded-full px-3 py-2 text-muted transition-colors hover:text-text">
-            Stranded mode
-          </Link>
           <Link
-            href="/demo"
+            href="/"
             className="rounded-full bg-accent px-4 py-2 font-medium text-on-accent transition-transform active:scale-[0.97]"
           >
-            Run the demo
+            Open the app
           </Link>
         </div>
       </nav>
